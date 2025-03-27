@@ -1,0 +1,7 @@
+*.env
+packages/
+node_modules/
+TODO
+openapitools.json
+SpaceTraders.json
+package-lock.json
