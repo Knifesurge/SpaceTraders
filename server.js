@@ -12,10 +12,18 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.set("view engine", "pug");
+app.set("views", "./views");
 
 app.use("/agent", AgentRouter);
-
 app.use("/contracts", ContractRouter);
+
+app.get("/", (req, res) => {
+  res.render("index", {
+    title: "SpaceTraders API",
+    message: "Welcome to the SpaceTraders API",
+  });
+});
 
 app.listen(3000, () => {
   console.log("Server is running on port 3000");
