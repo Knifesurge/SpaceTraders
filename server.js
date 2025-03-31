@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import AgentRouter from "./routes/agent.js";
 import ContractRouter from "./routes/contract.js";
+import SystemsRouter from "./routes/system.js";
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.set("views", "./views");
 
 app.use("/agent", AgentRouter);
 app.use("/contracts", ContractRouter);
+app.use("/systems", SystemsRouter);
 
 app.get("/", (req, res) => {
   res.render("index", {
