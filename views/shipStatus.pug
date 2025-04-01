@@ -1,0 +1,24 @@
+doctype html 
+html 
+    head 
+        title Ship Status
+    body 
+        for ship in ships
+            h1 Ship Status
+            p Ship Symbol: #{ship.symbol}
+            p Ship Type: #{ship.type}
+            p Ship System Symbol: #{ship.systemSymbol}
+            p Ship Waypoint Symbol: #{ship.waypointSymbol}
+            p Ship Status: #{ship.status}
+            p Ship Origin: #{ship.origin.symbol} - #{ship.origin.type}
+            p Ship Destination: #{ship.destination.symbol} - #{ship.destination.type}
+            p Time Remaining: #{ship.timeRemaining}
+            if ship.status == 'DOCKED'
+                form(action="/fleet/my/ships/orbit", method="post")
+                    input(type="hidden", name="shipSymbol", value=ship.symbol)
+                    button(type="submit") Send to Orbit
+            else
+                form(action="/fleet/my/ships/dock", method="post")
+                    input(type="hidden", name="shipSymbol", value=ship.symbol)
+                    button(type="submit") Dock The Ship
+

@@ -31,9 +31,11 @@ router.get("/:systemId/waypoints", cors(corsOptions), async (req, res) => {
   // Capture the possible query parameters
   const { page, limit, type, traits } = req.query;
   // Perform a reverse lookup on WaypointTraitSymbol
-  const traitKey = Object.keys(WaypointTraitSymbol).find(
-    (key) => WaypointTraitSymbol[key] === traits.toUpperCase()
-  );
+  const traitKey = traits
+    ? Object.keys(WaypointTraitSymbol).find(
+        (key) => WaypointTraitSymbol[key] === traits.toUpperCase()
+      )
+    : undefined;
   const trait = traitKey
     ? { traits: WaypointTraitSymbol[traitKey] }
     : undefined;
