@@ -32,7 +32,7 @@ router.get("/my/ships", cors(corsOptions), async (req, res) => {
     const arrival = DateTime.fromISO(ship.nav.route.arrival);
     const departure = DateTime.fromISO(ship.nav.route.departureTime);
     if (arrival.diffNow().milliseconds >= 0) {
-      const diff = arrival.diff(departure, ["hours", "minutes", "seconds"]);
+      const diff = arrival.diffNow(["hours", "minutes", "seconds"]);
       const timeRemaining = diff.toFormat("hh:mm:ss");
       shipData.timeRemaining = timeRemaining;
     } else {
