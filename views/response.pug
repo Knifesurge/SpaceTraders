@@ -1,0 +1,14 @@
+doctype html
+html
+  head
+    title Response Data
+  body
+    h1 Response Data
+
+    // Loop through the keys and values of the passed object
+    each value, key in data
+      p
+        strong #{key}:
+        span #{value}
+
+    a(href="/") Go back to form

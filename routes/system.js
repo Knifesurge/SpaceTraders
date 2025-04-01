@@ -3,7 +3,6 @@ import cors from "cors";
 
 import { SystemsApi, WaypointTraitSymbol } from "spacetraders-sdk";
 import config from "../data/config.js";
-import { getWaypointTrait } from "../utils/utils.js";
 
 const systemsApi = new SystemsApi(config);
 
