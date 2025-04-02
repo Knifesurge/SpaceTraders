@@ -7,6 +7,7 @@ html
             h1 Ship Status
             p Ship Symbol: #{ship.symbol}
             p Ship Type: #{ship.type}
+            p Ship (CurrentFuel/MaxFuel): #{ship.currentFuel}/#{ship.maxFuel}
             p Ship System Symbol: #{ship.systemSymbol}
             p Ship Waypoint Symbol: #{ship.waypointSymbol}
             p Ship Status: #{ship.status}
@@ -17,8 +18,22 @@ html
                 form(action="/fleet/my/ships/orbit", method="post")
                     input(type="hidden", name="shipSymbol", value=ship.symbol)
                     button(type="submit") Send to Orbit
+                form(action=`/fleet/my/ships/${ship.symbol}/refuel`, method="post")
+                    input(type="hidden" name="shipSymbol", value=ship.symbol)
+                    button(type="submit") Refuel max
+                form(action=`/fleet/my/ships/${ship.symbol}/refuel`, method="post")
+                    input(type="hidden", name="shipSymbol", value=ship.symbol)
+                    label(for="fuelAmount") Select Fuel Amount:
+                    input(type="range", id="fuelAmount", name="fuelAmount", min=1, max=(ship.maxFuel-ship.currentFuel), value=0, step="1", oninput="fuelOutput.textContent = this.value")
+                    output(for="fuelAmount", id="fuelOutput") 1
+                    button(type="submit") Refuel Selected Amount
             else
                 form(action="/fleet/my/ships/dock", method="post")
                     input(type="hidden", name="shipSymbol", value=ship.symbol)
                     button(type="submit") Dock The Ship
+                if ship.orbitingExtractable
+                    form(action=`/fleet/my/ships/${ship.symbol}/extract`, method="post")
+                        input(type="hidden", name="shipSymbol", value=ship.symbol)
+                        button(type="submit") Extract
+            
 

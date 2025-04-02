@@ -23,11 +23,14 @@ router.get("/my/ships", cors(corsOptions), async (req, res) => {
     const shipData = {
       symbol: ship.symbol,
       type: ship.frame.symbol,
+      currentFuel: ship.fuel.current,
+      maxFuel: ship.fuel.capacity,
       systemSymbol: ship.nav.systemSymbol,
       waypointSymbol: ship.nav.waypointSymbol,
       status: ship.nav.status,
       origin: ship.nav.route.origin,
       destination: ship.nav.route.destination,
+      orbitingExtractable: true, // Placeholder until I can figure out how to see which WaypointTypes are extractable
     };
     const arrival = DateTime.fromISO(ship.nav.route.arrival);
     const departure = DateTime.fromISO(ship.nav.route.departureTime);
@@ -45,6 +48,80 @@ router.get("/my/ships", cors(corsOptions), async (req, res) => {
   });
   //res.type("json").send(JSON.stringify(response.data, null, 2));
 });
+
+// GET a specific ship
+router.get("/my/ships/:shipSymbol", cors(corsOptions), async (req, res) => {
+  const response = await fleetApi.getMyShip(req.params.shipSymbol);
+  res.render("response", response.data);
+});
+
+// GET the cargo of a specific ship
+router.get(
+  "/my/ships/:shipSymbol/cargo",
+  cors(corsOptions),
+  async (req, res) => {
+    const responseData = req.session.responseData;
+    delete req.session.responseData;
+    const response = await fleetApi.getMyShipCargo(req.params.shipSymbol);
+    console.dir(responseData, { depth: null });
+    res.render("shipCargo", {
+      data: response.data.data,
+      shipSymbol: req.params.shipSymbol,
+      jettisonData: responseData,
+    });
+  }
+);
+
+router.post(
+  "/my/ships/:shipSymbol/jettison",
+  cors(corsOptions),
+  async (req, res) => {
+    const { cargoData, shipSymbol, cargoSymbol, cargoUnits } = req.body;
+    const data = { symbol: cargoSymbol, units: cargoUnits };
+    const response = await fleetApi.jettison(shipSymbol, data);
+    console.dir(cargoData, { depth: null });
+    req.session.responseData = {
+      cargoSymbol,
+      cargoUnits,
+    };
+    res.redirect(`/fleet/my/ships/${shipSymbol}/cargo`);
+  }
+);
+
+router.post(
+  "/my/ships/:shipSymbol/refuel",
+  cors(corsOptions),
+  async (req, res) => {
+    const { shipSymbol } = req.body;
+    const { units, fromCargo } = req.params;
+    const properFuelAmt = units ? units : undefined;
+    const response = await fleetApi.refuelShip(shipSymbol, {
+      units: properFuelAmt,
+      fromCargo: fromCargo,
+    });
+    res.redirect("/fleet/my/ships/");
+  }
+);
+
+router.post(
+  "/my/ships/:shipSymbol/extract",
+  cors(corsOptions),
+  async (req, res) => {
+    const { shipSymbol } = req.body;
+    // Hard-code the required survey object
+    const surveyData = {
+      signature: "",
+      symbol: "",
+      deposits: [{ symbol: "" }],
+      expiration: "",
+      size: "SMALL",
+    };
+    const response = await fleetApi.extractResources(shipSymbol, {
+      surveyData,
+    });
+    res.render("extract", { data: response.data.data });
+  }
+);
 
 router.post("/my/ships/orbit", cors(corsOptions), async (req, res) => {
   const { shipSymbol } = req.body;

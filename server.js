@@ -1,6 +1,7 @@
 import axios from "axios";
 import express from "express";
 import cors from "cors";
+import session from "express-session";
 import AgentRouter from "./routes/agent.js";
 import ContractRouter from "./routes/contract.js";
 import SystemsRouter from "./routes/system.js";
@@ -9,6 +10,14 @@ import FleetRouter from "./routes/fleet.js";
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false },
+  })
+);
 const corsOptions = {
   origin: "https://api.spacetraders.io/",
   methods: ["GET", "POST", "PATCH", "OPTIONS"],
