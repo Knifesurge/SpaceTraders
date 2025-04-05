@@ -5,7 +5,8 @@ head
 body 
     h1 Extracted Resources 
     br
-    p Ship Symbol:  #{shipSymbol}
+    p Ship Symbol:  
+    a(href=`/fleet/my/ships/${shipSymbol}/`) #{shipSymbol}
     if extract
         p Ship Remaining Cooldown: #{data.cooldown.remainingSeconds}
         h3 Extracted Resources 

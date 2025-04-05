@@ -75,6 +75,7 @@ router.get(
   }
 );
 
+// POST to jettison cargo from a ship
 router.post(
   "/my/ships/:shipSymbol/jettison",
   cors(corsOptions),
@@ -91,6 +92,7 @@ router.post(
   }
 );
 
+// POST to refuel a ship
 router.post(
   "/my/ships/:shipSymbol/refuel",
   cors(corsOptions),
@@ -106,6 +108,7 @@ router.post(
   }
 );
 
+// POST to extract resources
 router.post(
   "/my/ships/:shipSymbol/extract",
   cors(corsOptions),
@@ -141,42 +144,39 @@ router.post(
   }
 );
 
+// POST to put a ship into orbit
 router.post("/my/ships/orbit", cors(corsOptions), async (req, res) => {
   const { shipSymbol } = req.body;
   const response = await fleetApi.orbitShip(shipSymbol);
   res.redirect("/fleet/my/ships/");
 });
 
+// POST to dock a ship
 router.post("/my/ships/dock", cors(corsOptions), async (req, res) => {
   const { shipSymbol } = req.body;
   const response = await fleetApi.dockShip(shipSymbol);
   res.redirect("/fleet/my/ships/");
 });
 
+// GET the ship navigation form
 router.get("/my/ships/navigate", cors(corsOptions), async (req, res) => {
   // Get all owned ships and their current systems
   const myShipResponse = await fleetApi.getMyShips();
   const shipData = [];
-  //console.log("==> Ships:");
-  //console.dir(myShipResponse.data.data, { depth: null });
   for (const ship of myShipResponse.data.data) {
     shipData.push({
       symbol: ship.symbol,
       systemSymbol: ship.nav.systemSymbol,
     });
   }
-  //console.dir(shipData, { depth: null });
-  //console.log("==> Systems:");
   // Only add unique systems so we don't make duplicate API calls
   const currentSystems = [
     ...new Set(shipData.map((ship) => ship.systemSymbol)),
   ];
-  //console.dir(currentSystems, { depth: null });
   // Get all waypoints in the current systems
   const waypointData = [];
   for (const system of currentSystems) {
     const waypointResponse = await systemsApi.getSystemWaypoints(system);
-    //console.dir(waypointResponse.data, { depth: null });
     for (const waypoint of waypointResponse.data.data) {
       waypointData.push({
         symbol: waypoint.symbol,
@@ -186,13 +186,13 @@ router.get("/my/ships/navigate", cors(corsOptions), async (req, res) => {
       });
     }
   }
-  //console.dir(waypointData, { depth: null });
   res.render("shipNavigationForm", {
     ships: shipData ? shipData : [],
     waypoints: waypointData ? waypointData : [],
   });
 });
 
+// POST to navigate a ship to a waypoint
 router.post("/my/ships/navigate/submit", async (req, res) => {
   console.log("==> Request:");
   console.dir(req.body, { depth: 2 });
