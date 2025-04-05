@@ -7,13 +7,17 @@ html
             h1 Ship Status
             p Ship Symbol: #{ship.symbol}
             p Ship Type: #{ship.type}
+            p Ship Cooldown: #{ship.cooldownRemaining}
             p Ship (CurrentFuel/MaxFuel): #{ship.currentFuel}/#{ship.maxFuel}
+            p Ship (CurrentCargo/MaxCargo): #{ship.currentCargo}/#{ship.maxCargo}
             p Ship System Symbol: #{ship.systemSymbol}
             p Ship Waypoint Symbol: #{ship.waypointSymbol}
             p Ship Status: #{ship.status}
             p Ship Origin: #{ship.origin.symbol} - #{ship.origin.type}
             p Ship Destination: #{ship.destination.symbol} - #{ship.destination.type}
             p Time Remaining: #{ship.timeRemaining}
+            form(action=`/fleet/my/ships/${ship.symbol}/cargo`, method="get")
+                button(type="submit") View Cargo
             if ship.status == 'DOCKED'
                 form(action="/fleet/my/ships/orbit", method="post")
                     input(type="hidden", name="shipSymbol", value=ship.symbol)

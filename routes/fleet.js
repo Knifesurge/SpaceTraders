@@ -23,8 +23,11 @@ router.get("/my/ships", cors(corsOptions), async (req, res) => {
     const shipData = {
       symbol: ship.symbol,
       type: ship.frame.symbol,
+      cooldownRemaining: ship.cooldown.remainingSeconds,
       currentFuel: ship.fuel.current,
       maxFuel: ship.fuel.capacity,
+      currentCargo: ship.cargo.units,
+      maxCargo: ship.cargo.capacity,
       systemSymbol: ship.nav.systemSymbol,
       waypointSymbol: ship.nav.waypointSymbol,
       status: ship.nav.status,
@@ -63,7 +66,7 @@ router.get(
     const responseData = req.session.responseData;
     delete req.session.responseData;
     const response = await fleetApi.getMyShipCargo(req.params.shipSymbol);
-    console.dir(responseData, { depth: null });
+    //console.dir(responseData, { depth: null });
     res.render("shipCargo", {
       data: response.data.data,
       shipSymbol: req.params.shipSymbol,
@@ -79,7 +82,7 @@ router.post(
     const { cargoData, shipSymbol, cargoSymbol, cargoUnits } = req.body;
     const data = { symbol: cargoSymbol, units: cargoUnits };
     const response = await fleetApi.jettison(shipSymbol, data);
-    console.dir(cargoData, { depth: null });
+    //console.dir(cargoData, { depth: null });
     req.session.responseData = {
       cargoSymbol,
       cargoUnits,
@@ -108,18 +111,33 @@ router.post(
   cors(corsOptions),
   async (req, res) => {
     const { shipSymbol } = req.body;
-    // Hard-code the required survey object
-    const surveyData = {
-      signature: "",
-      symbol: "",
-      deposits: [{ symbol: "" }],
-      expiration: "",
-      size: "SMALL",
-    };
-    const response = await fleetApi.extractResources(shipSymbol, {
-      surveyData,
-    });
-    res.render("extract", { data: response.data.data });
+
+    // Don't hit endpoint if currently on cooldown
+    const cooldownResponse = await fleetApi.getShipCooldown(shipSymbol);
+    if (cooldownResponse.status === 204) {
+      // Hard-code the required survey object
+      const surveyData = {
+        signature: "",
+        symbol: "",
+        deposits: [{ symbol: "" }],
+        expiration: "",
+        size: "SMALL",
+      };
+      const response = await fleetApi.extractResources(shipSymbol, {
+        surveyData,
+      });
+      res.render("extract", {
+        shipSymbol: response.data.data.cooldown.shipSymbol,
+        data: response.data.data,
+        extract: true,
+      });
+    } else {
+      res.render("extract", {
+        shipSymbol: cooldownResponse.data.data.shipSymbol,
+        data: cooldownResponse.data.data,
+        extract: false,
+      });
+    }
   }
 );
 
