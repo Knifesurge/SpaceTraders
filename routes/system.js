@@ -77,4 +77,19 @@ router.get(
     res.type("json").send(JSON.stringify(response.data, null, 2));
   }
 );
+
+// GET market information for a specific waypoint in a specific system
+router.get(
+  "/:systemId/waypoints/:waypointId/market",
+  cors(corsOptions),
+  async (req, res) => {
+    const response = await systemsApi.getMarket(
+      req.params.systemId,
+      req.params.waypointId
+    );
+    console.log(response.data);
+    res.type("json").send(JSON.stringify(response.data, null, 2));
+  }
+);
+
 export default router;
