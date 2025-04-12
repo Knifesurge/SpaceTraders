@@ -1,0 +1,25 @@
+doctype html
+html
+  head
+    title Response Data
+  body
+    h1 Response Data
+
+    // Recursive function to display nested key-values with indentation
+    mixin displayData(data, level = 0)
+      each value, key in data
+        if typeof value == 'object'
+          p(style=`margin-left: ${level * 20}px`)
+          strong #{key}:
+          ul
+          li
+            +displayData(value, level + 1)
+        else
+          p(style=`margin-left: ${level * 20}px`)
+          strong #{key}:
+          span #{value}
+
+    // Call the mixin with the passed data
+    +displayData(data)
+
+    a(href="/") Go back to form

@@ -1,0 +1,29 @@
+doctype html 
+html 
+head 
+    title Extract Resource 
+body 
+    h1 Extracted Resources 
+    br
+    p Ship Symbol:  
+    a(href=`/fleet/my/ships/${shipSymbol}/`) #{shipSymbol}
+    if extract
+        p Ship Remaining Cooldown: #{data.cooldown.remainingSeconds}
+        h3 Extracted Resources 
+        hr
+        ul 
+        li #{data.extraction.yield.units} x #{data.extraction.yield.symbol}
+        hr
+        h3 Events 
+        hr
+        ul
+        for key, value in data.events 
+            li #{key}: #{value}
+    else 
+        p Ship Cooldown: #{data.remainingSeconds}
+        p No resources extracted.
+    a(href="/fleet/my/ships") Go back to Ship Status
+    form(action=`/fleet/my/ships/${shipSymbol}/extract`, method="post")
+        input(type="hidden", name="shipSymbol", value=shipSymbol)
+        input(type="hidden", name="data", value=data)
+        button(type="submit") Extract Again

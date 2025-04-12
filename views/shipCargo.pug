@@ -1,0 +1,28 @@
+doctype html
+html
+  head
+    title Ship Cargo
+  body
+    h1 Ship Cargo
+
+    p Ship Symbol: #{shipSymbol}
+    p Space used: #{data.units}/#{data.capacity}
+    if jettisonData
+      div.alert
+        p Successfully jettisoned #{jettisonData.cargoUnits} units of #{jettisonData.cargoSymbol}
+    ul
+    for item in data.inventory 
+        hr
+        li Name: #{item.name}
+        li Description: #{item.description}
+        li Units: #{item.units}
+        form(action=`/fleet/my/ships/${shipSymbol}/jettison`, method="post")
+            input(type="hidden", name="cargoData", value=data)
+            input(type="hidden", name="shipSymbol", value=shipSymbol)
+            input(type="hidden", name="cargoSymbol", value=item.symbol)
+            input(type="range", id="cargoUnits", name="cargoUnits", min=1, max=item.units, value=0, step="1", oninput="cargoOutput.textContent = this.value")
+            output(for="cargoUnits", id="cargoOutput") 1
+            button(type="submit") Jettison Cargo
+        hr
+
+    a(href="/fleet/my/ships") Go back to Ship Status

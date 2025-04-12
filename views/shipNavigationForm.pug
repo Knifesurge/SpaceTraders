@@ -1,0 +1,17 @@
+doctype html
+html
+  head
+    title Ship Navigation Form
+  body
+    h1 Enter Ship Details
+    label(for="selection") Choose a Ship:
+    form(action="/fleet/my/ships/navigate/submit" method="POST")
+      select(id="selection" name="shipSymbol" required)
+        option(value="" disabled selected) -- Select an option --
+        each option in ships
+          option(value=option.symbol) #{option.symbol} -- #{option.systemSymbol}
+      br
+      label(for="selection") Enter a Waypoint:
+      input(type="text" id="selection" name="waypointSymbol" placeholder="Enter waypoint symbol" required)
+      br
+      button(type="submit") Submit
