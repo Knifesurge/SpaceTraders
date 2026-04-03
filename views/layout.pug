@@ -1,0 +1,21 @@
+//- layout.pug
+doctype html 
+html 
+    head 
+        title #{title || "My SpaceTraders Client"}
+        style.
+            body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
+            .topbar { display: flex; background: #333; color: white; padding: 10px; }
+            .topbar a { color: white; margin-right: 20px; text-decoration: none; }
+            .topbar a.active { font-weight: bold; text-decoration: underline; }
+            .container { padding: 20px; }
+            .ship-card { background: white; padding: 15px; margin-bottom: 15px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+            button { margin-top: 5px; }
+
+    body 
+        //- Top Navigation Bar
+        include topbar.pug 
+
+        //- Page-specific content inserted here
+        .container 
+            block content

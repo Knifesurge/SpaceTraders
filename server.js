@@ -6,17 +6,20 @@ import AgentRouter from "./routes/agent.js";
 import ContractRouter from "./routes/contract.js";
 import SystemsRouter from "./routes/system.js";
 import FleetRouter from "./routes/fleet.js";
+import dotenv from "dotenv";
+
+dotenv.config({ path: "./data/.env" });
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
   session({
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || "fallbacksecret",
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false },
-  })
+  }),
 );
 const corsOptions = {
   origin: "https://api.spacetraders.io/",
