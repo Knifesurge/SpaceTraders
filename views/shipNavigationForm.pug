@@ -1,18 +1,219 @@
-//- shipNavigationForm.pug
-doctype html
-html
-  head
-    title Ship Navigation Form
-  body
-    h1 Enter Ship Details
-    label(for="selection") Choose a Ship:
+extends layout
+
+block content
+  style.
+    .nav-card {
+      max-width: 760px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 18px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    }
+    .nav-card h1 {
+      margin: 0 0 8px;
+      font-size: 1.6rem;
+    }
+    .nav-sub {
+      margin: 0 0 14px;
+      color: #475569;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .field-row label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .field-row select,
+    .field-row input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      font-size: 0.95rem;
+      background: #fff;
+      box-sizing: border-box;
+    }
+    .field-row select:disabled {
+      background: #f1f5f9;
+      color: #64748b;
+      cursor: not-allowed;
+    }
+    .system-note {
+      margin: 2px 0 0;
+      font-size: 0.85rem;
+      color: #334155;
+    }
+    .eta-note {
+      margin: 4px 0 0;
+      font-size: 0.85rem;
+      color: #0f172a;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+    .actions button,
+    .actions a {
+      border: 0;
+      background: #0f766e;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 7px;
+      text-decoration: none;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .actions a.secondary {
+      background: #475569;
+    }
+
+  .nav-card
+    h1 Ship Navigation
+    p.nav-sub
+      | Select a ship first, then choose a waypoint in that ship's current system.
+
     form(action="/fleet/my/ships/navigate/submit" method="POST")
-      select(id="selection" name="shipSymbol" required)
-        option(value="" disabled selected) -- Select an option --
-        each option in ships
-          option(value=option.symbol) #{option.symbol} -- #{option.systemSymbol}
-      br
-      label(for="selection") Enter a Waypoint:
-      input(type="text" id="selection" name="waypointSymbol" placeholder="Enter waypoint symbol" required)
-      br
-      button(type="submit") Submit
+      .form-grid
+        .field-row
+          label(for="shipSymbol") Ship
+          select(id="shipSymbol" name="shipSymbol" required)
+            option(value="" selected disabled) -- Select a ship --
+            each ship in ships
+              option(value=ship.symbol data-system=ship.systemSymbol)
+                | #{ship.symbol} - #{ship.systemSymbol}
+
+        .field-row
+          label(for="waypointSymbol") Waypoint
+          select(id="waypointSymbol" name="waypointSymbol" required disabled)
+            option(value="" selected disabled) -- Select a ship first --
+          p.system-note(id="systemNote") System: not selected
+          p.eta-note Estimated ETA based on current ship speed and flight mode.
+
+        .actions
+          button(type="submit") Navigate Ship
+          a.secondary(href="/fleet/my/ships") Back to Fleet
+
+  script.
+    (() => {
+      const ships = !{JSON.stringify(ships || [])};
+      const waypoints = !{JSON.stringify(waypoints || [])};
+
+      const shipSelect = document.getElementById("shipSymbol");
+      const waypointSelect = document.getElementById("waypointSymbol");
+      const systemNote = document.getElementById("systemNote");
+
+      const flightModeTimeMultiplier = {
+        DRIFT: 2.5,
+        STEALTH: 1.75,
+        CRUISE: 1,
+        BURN: 0.5,
+      };
+
+      // Build an in-page cache keyed by system symbol.
+      const waypointCacheBySystem = {};
+      for (const waypoint of waypoints) {
+        const system = waypoint.systemSymbol;
+        if (!waypointCacheBySystem[system]) waypointCacheBySystem[system] = [];
+        waypointCacheBySystem[system].push(waypoint);
+      }
+
+      const setWaypointOptions = (systemSymbol) => {
+        waypointSelect.innerHTML = "";
+
+        if (!systemSymbol) {
+          waypointSelect.disabled = true;
+          const placeholder = document.createElement("option");
+          placeholder.value = "";
+          placeholder.textContent = "-- Select a ship first --";
+          placeholder.selected = true;
+          placeholder.disabled = true;
+          waypointSelect.appendChild(placeholder);
+          systemNote.textContent = "System: not selected";
+          return;
+        }
+
+        const selectedShip = ships.find((ship) => ship.symbol === shipSelect.value);
+        const currentShipWaypoint = selectedShip
+          ? waypoints.find((waypoint) => waypoint.symbol === selectedShip.waypointSymbol)
+          : null;
+        const engineSpeed = selectedShip?.engineSpeed || 1;
+        const flightMode = selectedShip?.flightMode || "CRUISE";
+        const timeMultiplier = flightModeTimeMultiplier[flightMode] || 1;
+
+        const estimateEtaSeconds = (fromWaypoint, toWaypoint) => {
+          if (!fromWaypoint || !toWaypoint) return null;
+          const dx = Number(toWaypoint.x) - Number(fromWaypoint.x);
+          const dy = Number(toWaypoint.y) - Number(fromWaypoint.y);
+          const distance = Math.sqrt((dx * dx) + (dy * dy));
+          if (distance === 0) return 0;
+          const baseSeconds = (distance / Math.max(1, Number(engineSpeed))) * 60;
+          return Math.ceil(baseSeconds * timeMultiplier);
+        };
+
+        const formatEta = (seconds) => {
+          if (seconds === null || Number.isNaN(seconds)) return "ETA n/a";
+          if (seconds <= 0) return "ETA 00:00:00";
+          const hh = String(Math.floor(seconds / 3600)).padStart(2, "0");
+          const mm = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
+          const ss = String(seconds % 60).padStart(2, "0");
+          return `ETA ${hh}:${mm}:${ss}`;
+        };
+
+        const availableWaypoints = waypointCacheBySystem[systemSymbol] || [];
+        const waypointsWithEta = availableWaypoints
+          .map((waypoint) => ({
+            waypoint,
+            etaSeconds: estimateEtaSeconds(currentShipWaypoint, waypoint),
+          }))
+          .sort((a, b) => {
+            const aEta = a.etaSeconds;
+            const bEta = b.etaSeconds;
+            const aMissing = aEta === null || Number.isNaN(aEta);
+            const bMissing = bEta === null || Number.isNaN(bEta);
+
+            if (aMissing && bMissing) {
+              return a.waypoint.symbol.localeCompare(b.waypoint.symbol);
+            }
+            if (aMissing) return 1;
+            if (bMissing) return -1;
+            if (aEta !== bEta) return aEta - bEta;
+            return a.waypoint.symbol.localeCompare(b.waypoint.symbol);
+          });
+        waypointSelect.disabled = false;
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "-- Select a waypoint --";
+        placeholder.selected = true;
+        placeholder.disabled = true;
+        waypointSelect.appendChild(placeholder);
+
+        for (const item of waypointsWithEta) {
+          const waypoint = item.waypoint;
+          const option = document.createElement("option");
+          option.value = waypoint.symbol;
+          option.textContent = `${waypoint.symbol} (${waypoint.type}) - ${formatEta(item.etaSeconds)}`;
+          waypointSelect.appendChild(option);
+        }
+
+        const currentWaypointText = currentShipWaypoint ? currentShipWaypoint.symbol : "unknown";
+        systemNote.textContent = `System: ${systemSymbol} | Current: ${currentWaypointText} | Mode: ${flightMode} | Waypoints: ${availableWaypoints.length}`;
+      };
+
+      shipSelect.addEventListener("change", () => {
+        const selectedShip = ships.find((ship) => ship.symbol === shipSelect.value);
+        setWaypointOptions(selectedShip ? selectedShip.systemSymbol : "");
+      });
+
+      // Keep waypoint disabled on first load until ship is selected.
+      setWaypointOptions("");
+    })();

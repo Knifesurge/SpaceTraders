@@ -1,45 +1,365 @@
-//- shipStatus.pug
-doctype html 
-html 
-    head 
-        title Ship Status
-    body 
-        a(href="/fleet/my/ships/navigate") Navigate Ship
-        for ship in ships
-            h1 Ship Status
-            p Ship Symbol: #{ship.symbol}
-            p Ship Type: #{ship.type}
-            p Ship Cooldown: #{ship.cooldownRemaining}
-            p Ship (CurrentFuel/MaxFuel): #{ship.currentFuel}/#{ship.maxFuel}
-            p Ship (CurrentCargo/MaxCargo): #{ship.currentCargo}/#{ship.maxCargo}
-            p Ship System Symbol: #{ship.systemSymbol}
-            p Ship Waypoint Symbol: #{ship.waypointSymbol}
-            p Ship Status: #{ship.status}
-            p Ship Origin: #{ship.origin.symbol} - #{ship.origin.type}
-            p Ship Destination: #{ship.destination.symbol} - #{ship.destination.type}
-            p Time Remaining: #{ship.timeRemaining}
-            form(action=`/fleet/my/ships/${ship.symbol}/cargo`, method="get")
-                button(type="submit") View Cargo
-            if ship.status == 'DOCKED'
-                form(action="/fleet/my/ships/orbit", method="post")
-                    input(type="hidden", name="shipSymbol", value=ship.symbol)
-                    button(type="submit") Send to Orbit
-                form(action=`/fleet/my/ships/${ship.symbol}/refuel`, method="post")
-                    input(type="hidden" name="shipSymbol", value=ship.symbol)
-                    button(type="submit") Refuel max
-                form(action=`/fleet/my/ships/${ship.symbol}/refuel`, method="post")
-                    input(type="hidden", name="shipSymbol", value=ship.symbol)
-                    label(for="fuelAmount") Select Fuel Amount:
-                    input(type="range", id="fuelAmount", name="fuelAmount", min=1, max=(ship.maxFuel-ship.currentFuel), value=0, step="1", oninput="fuelOutput.textContent = this.value")
-                    output(for="fuelAmount", id="fuelOutput") 1
-                    button(type="submit") Refuel Selected Amount
-            else
-                form(action="/fleet/my/ships/dock", method="post")
-                    input(type="hidden", name="shipSymbol", value=ship.symbol)
-                    button(type="submit") Dock The Ship
-                if ship.orbitingExtractable
-                    form(action=`/fleet/my/ships/${ship.symbol}/extract`, method="post")
-                        input(type="hidden", name="shipSymbol", value=ship.symbol)
-                        button(type="submit") Extract
-            
+extends layout
+
+block content
+    style.
+        .fleet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .fleet-title {
+            margin: 0;
+            font-size: 1.85rem;
+            line-height: 1.1;
+        }
+        .fleet-sub {
+            margin: 4px 0 0;
+            color: #475569;
+            font-size: 0.95rem;
+        }
+        .fleet-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .fleet-actions a {
+            display: inline-block;
+            background: #0f766e;
+            color: #fff;
+            text-decoration: none;
+            padding: 8px 12px;
+            border-radius: 7px;
+            font-weight: 700;
+            font-size: 0.88rem;
+        }
+        .fleet-actions a.secondary {
+            background: #475569;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .stat-card {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+        }
+        .stat-label {
+            margin: 0;
+            color: #64748b;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            font-weight: 700;
+        }
+        .stat-value {
+            margin: 4px 0 0;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .fleet-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 14px;
+            align-items: start;
+        }
+        .ship-card {
+            align-self: start;
+            border-left: 4px solid #94a3b8;
+        }
+        .ship-card.status-docked {
+            border-left-color: #2563eb;
+        }
+        .ship-card.status-in-transit {
+            border-left-color: #dc2626;
+        }
+        .ship-card.status-in-orbit {
+            border-left-color: #7c3aed;
+        }
+        .ship-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        .ship-top h2 {
+            margin: 0;
+            font-size: 1.12rem;
+        }
+        .status-chip {
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #fff;
+            background: #334155;
+        }
+        .status-chip.docked { background: #2563eb; }
+        .status-chip.in-transit { background: #dc2626; }
+        .status-chip.in-orbit { background: #7c3aed; }
+        .section-title {
+            margin: 10px 0 6px;
+            font-size: 0.85rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            font-weight: 700;
+        }
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 10px;
+        }
+        .meta-grid p {
+            margin: 0;
+            font-size: 0.92rem;
+            color: #0f172a;
+        }
+        .eta-row {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #cbd5e1;
+            font-size: 0.92rem;
+        }
+        .eta-row p {
+            margin: 0;
+        }
+        .arrived-label {
+            margin-left: 6px;
+            color: #16a34a;
+            font-weight: 700;
+            display: none;
+        }
+        .arrived-label.visible {
+            display: inline;
+        }
+        .actions-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .actions-row form {
+            margin: 0;
+        }
+        .actions-row button,
+        .actions-row a {
+            margin: 0;
+            border: 0;
+            border-radius: 6px;
+            padding: 7px 10px;
+            cursor: pointer;
+            font-weight: 700;
+            background: #111827;
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.85rem;
+            display: inline-block;
+        }
+        .actions-row button.secondary,
+        .actions-row a.secondary {
+            background: #475569;
+        }
+        .refuel-panel {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .refuel-panel label {
+            display: block;
+            font-size: 0.84rem;
+            margin-bottom: 4px;
+            color: #334155;
+            font-weight: 700;
+        }
+        .refuel-panel output {
+            display: inline-block;
+            min-width: 24px;
+            text-align: center;
+            margin-left: 6px;
+            font-weight: 700;
+        }
+        .refuel-panel input[type="range"] {
+            width: 100%;
+            margin: 4px 0 2px;
+        }
+
+    - const totalShips = (ships && ships.length) ? ships.length : 0
+    - const dockedCount = (ships || []).filter((ship) => ship.status === "DOCKED").length
+    - const transitCount = (ships || []).filter((ship) => ship.status === "IN_TRANSIT").length
+    - const orbitCount = (ships || []).filter((ship) => ship.status === "IN_ORBIT").length
+
+    .fleet-header
+        div
+            h1.fleet-title Fleet Command
+            p.fleet-sub Operational snapshot of your active ships and their immediate controls.
+        .fleet-actions
+            a(href="/fleet/my/ships/navigate") Navigation Tool
+            a.secondary(href="/systems/current/view") Current System
+            a.secondary(href="/fleet/my/ships/purchase") Purchase Ship
+
+    .stats-grid
+        .stat-card
+            p.stat-label Total Ships
+            p.stat-value= totalShips
+        .stat-card
+            p.stat-label Docked
+            p.stat-value= dockedCount
+        .stat-card
+            p.stat-label In Transit
+            p.stat-value= transitCount
+        .stat-card
+            p.stat-label In Orbit
+            p.stat-value= orbitCount
+
+    if ships && ships.length
+        .fleet-grid
+            each ship, i in ships
+                - const normalizedStatus = (ship.status || "").toLowerCase().replace("_", "-")
+                .ship-card(class=`status-${normalizedStatus}`)
+                    .ship-top
+                        h2= ship.symbol
+                        span(class=`status-chip ${normalizedStatus}`)= ship.status
+
+                    p.section-title Resources
+                    .meta-grid
+                        p
+                            strong Type:
+                            |  #{ship.type}
+                        p
+                            strong Cooldown:
+                            |  #{ship.cooldownRemaining}s
+                        p
+                            strong Fuel:
+                            |  #{ship.currentFuel}/#{ship.maxFuel}
+                        p
+                            strong Cargo:
+                            |  #{ship.currentCargo}/#{ship.maxCargo}
+
+                    p.section-title Position
+                    .meta-grid
+                        p
+                            strong System:
+                            |  #{ship.systemSymbol}
+                        p
+                            strong Waypoint:
+                            |  #{ship.waypointSymbol}
+
+                    p.section-title Route
+                    .meta-grid
+                        p
+                            strong Origin:
+                            |  #{ship.origin.symbol} (#{ship.origin.type})
+                        p
+                            strong Destination:
+                            |  #{ship.destination.symbol} (#{ship.destination.type})
+
+                    .eta-row
+                        p
+                            strong ETA:
+                            if ship.status == "IN_TRANSIT" && ship.arrival
+                                span.js-eta(data-status=ship.status data-arrival=ship.arrival)= ship.timeRemaining
+                                span.arrived-label.js-arrived Arrived
+                            else
+                                span= ship.timeRemaining
+
+                    .actions-row
+                        a.secondary(href=`/fleet/my/ships/${ship.symbol}`) Ship Details
+
+                        if ship.status == "DOCKED"
+                            form(action="/fleet/my/ships/orbit", method="post")
+                                input(type="hidden", name="shipSymbol", value=ship.symbol)
+                                button(type="submit") Send to Orbit
+
+                            form(action=`/fleet/my/ships/${ship.symbol}/refuel`, method="post")
+                                input(type="hidden", name="shipSymbol", value=ship.symbol)
+                                button.secondary(type="submit") Refuel Max
+
+                            .refuel-panel
+                                form(action=`/fleet/my/ships/${ship.symbol}/refuel`, method="post")
+                                    input(type="hidden", name="shipSymbol", value=ship.symbol)
+                                    label(for=`fuelAmount-${i}`)
+                                        | Select Fuel Amount:
+                                        output(id=`fuelOutput-${i}`) 1
+                                    input(
+                                        type="range"
+                                        id=`fuelAmount-${i}`
+                                        name="fuelAmount"
+                                        min=1
+                                        max=(ship.maxFuel - ship.currentFuel > 0 ? ship.maxFuel - ship.currentFuel : 1)
+                                        value=1
+                                        step="1"
+                                        oninput=`document.getElementById('fuelOutput-${i}').textContent = this.value`
+                                    )
+                                    .actions-row
+                                        button.secondary(type="submit") Refuel Selected Amount
+                        else
+                            form(action="/fleet/my/ships/dock", method="post")
+                                input(type="hidden", name="shipSymbol", value=ship.symbol)
+                                button(type="submit") Dock Ship
+
+                            if ship.orbitingExtractable
+                                form(action=`/fleet/my/ships/${ship.symbol}/extract`, method="post")
+                                    input(type="hidden", name="shipSymbol", value=ship.symbol)
+                                    button.secondary(type="submit") Extract Resources
+    else
+        .ship-card
+            h2 No ships found
+            p No ship data is currently available for this account.
+
+    script.
+        (() => {
+            const etaElements = document.querySelectorAll(".js-eta[data-arrival]");
+
+            const formatRemaining = (ms) => {
+                const safeMs = Math.max(ms, 0);
+                const totalSeconds = Math.floor(safeMs / 1000);
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+
+                const hh = String(hours).padStart(2, "0");
+                const mm = String(minutes).padStart(2, "0");
+                const ss = String(seconds).padStart(2, "0");
+                return `${hh}:${mm}:${ss}`;
+            };
+
+            const tick = () => {
+                const now = Date.now();
+                etaElements.forEach((element) => {
+                    const arrivalValue = element.getAttribute("data-arrival");
+                    const arrivalMs = Date.parse(arrivalValue || "");
+                    if (Number.isNaN(arrivalMs)) {
+                        return;
+                    }
+
+                    const remaining = arrivalMs - now;
+                    element.textContent = formatRemaining(remaining);
+
+                    const arrivedLabel = element.parentElement.querySelector(".js-arrived");
+                    if (!arrivedLabel) {
+                        return;
+                    }
+
+                    if (remaining <= 0) {
+                        arrivedLabel.classList.add("visible");
+                    } else {
+                        arrivedLabel.classList.remove("visible");
+                    }
+                });
+            };
+
+            tick();
+            setInterval(tick, 1000);
+        })();
+
 

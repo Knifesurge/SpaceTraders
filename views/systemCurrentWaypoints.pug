@@ -1,0 +1,429 @@
+extends layout
+
+block content
+  style.
+    .systems-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .systems-title {
+      margin: 0;
+      font-size: 1.75rem;
+    }
+    .systems-sub {
+      margin: 0;
+      color: #475569;
+    }
+    .systems-form {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin: 8px 0 18px;
+    }
+    .systems-form select {
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 7px 10px;
+      background: #fff;
+    }
+    .systems-form button,
+    .systems-link {
+      border: 0;
+      border-radius: 6px;
+      padding: 7px 11px;
+      background: #0f766e;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-block;
+    }
+    .type-filter-wrap {
+      margin: 0 0 14px;
+    }
+    .type-filter-title {
+      margin: 0 0 8px;
+      font-size: 0.92rem;
+      color: #334155;
+      font-weight: 700;
+    }
+    .type-filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .type-filter-btn {
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #0f172a;
+      border-radius: 999px;
+      padding: 5px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .type-filter-btn.active {
+      background: #0f766e;
+      border-color: #0f766e;
+      color: #fff;
+    }
+    .type-filter-count {
+      display: inline-block;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #0f172a;
+      min-width: 20px;
+      text-align: center;
+      padding: 1px 6px;
+      line-height: 1.4;
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+    .type-filter-btn.active .type-filter-count {
+      background: rgba(255, 255, 255, 0.22);
+      color: #fff;
+    }
+    .waypoint-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+      gap: 14px;
+      align-items: start;
+    }
+    .waypoint-card {
+      align-self: start;
+      border-left: 4px solid #94a3b8;
+    }
+    .waypoint-card.current {
+      border-left-color: #0f766e;
+    }
+    .waypoint-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .waypoint-top h2 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+    .waypoint-type {
+      font-size: 0.85rem;
+      color: #334155;
+      background: #e2e8f0;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 10px;
+      margin-bottom: 10px;
+    }
+    .meta-grid p {
+      margin: 0;
+      font-size: 0.92rem;
+    }
+    .highlights {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 8px 0;
+    }
+    .highlight-chip {
+      background: #111827;
+      color: #fff;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 3px 8px;
+    }
+    .traits-row {
+      margin: 8px 0;
+      font-size: 0.85rem;
+      color: #334155;
+      line-height: 1.4;
+    }
+    .presence-block {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed #cbd5e1;
+      font-size: 0.88rem;
+      color: #0f172a;
+      line-height: 1.45;
+    }
+    .presence-block p {
+      margin: 0 0 4px;
+    }
+    .presence-list {
+      margin: 0 0 4px;
+      padding-left: 16px;
+    }
+    .actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .actions-row a {
+      display: inline-block;
+      text-decoration: none;
+      background: #475569;
+      color: #fff;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .presence-list a {
+      color: #0f766e;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .presence-list a:hover {
+      text-decoration: underline;
+    }
+    .debug-card {
+      margin: 8px 0 16px;
+      border-left: 4px solid #dc2626;
+      background: #fff7ed;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: #7c2d12;
+    }
+    .debug-card p {
+      margin: 0 0 6px;
+    }
+    .debug-card pre {
+      margin: 0;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .debug-toggle-wrap {
+      margin-top: 14px;
+      text-align: right;
+    }
+    .debug-toggle {
+      border: 0;
+      background: transparent;
+      color: #475569;
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 0.85rem;
+      padding: 0;
+    }
+    .debug-card.hidden {
+      display: none;
+    }
+
+  .systems-header
+    div
+      h1.systems-title Current System Waypoints
+      if systemSymbol
+        p.systems-sub
+          | System #{systemSymbol}
+          if currentWaypointSymbol
+            |  | Current ship waypoint: #{currentWaypointSymbol}
+      else
+        p.systems-sub No systems found in your fleet.
+    a.systems-link(href="/fleet/my/ships") Back to Fleet
+
+  if systemsInFleet && systemsInFleet.length
+    form.systems-form(action="/systems/current/view" method="get")
+      label(for="systemSelect") Choose system:
+      select(id="systemSelect" name="system")
+        each system in systemsInFleet
+          if system === selectedSystem
+            option(value=system selected)= system
+          else
+            option(value=system)= system
+      button(type="submit") Load System
+
+  .type-filter-wrap
+    p.type-filter-title Filter by waypoint type
+    .type-filter-bar#typeFilterBar
+
+  if waypoints && waypoints.length
+    .waypoint-grid
+      each waypoint in waypoints
+        .ship-card.waypoint-card.js-waypoint-card(
+          class=waypoint.isCurrent ? "current" : ""
+          data-waypoint-type=waypoint.type
+        )
+          .waypoint-top
+            h2= waypoint.symbol
+            span.waypoint-type= waypoint.type
+
+          .meta-grid
+            p
+              strong Coordinates:
+              |  (#{waypoint.x}, #{waypoint.y})
+            p
+              strong Orbitals:
+              |  #{waypoint.orbitalsCount}
+            p
+              strong Distance:
+              if waypoint.distanceFromCurrent !== null
+                |  #{waypoint.distanceFromCurrent.toFixed(1)}
+              else
+                |  n/a
+            p
+              strong Construction:
+              |  #{waypoint.isUnderConstruction ? "Yes" : "No"}
+
+          if waypoint.highlights && waypoint.highlights.length
+            .highlights
+              each item in waypoint.highlights
+                span.highlight-chip= item
+          else
+            .highlights
+              span.highlight-chip No major facilities
+
+          .traits-row
+            strong Traits:
+            |  #{waypoint.traits && waypoint.traits.length ? waypoint.traits.join(", ") : "none"}
+
+          .presence-block
+            p
+              strong Ships Here:
+              |  #{waypoint.shipsAtWaypoint ? waypoint.shipsAtWaypoint.length : 0}
+
+            if waypoint.dockedShips && waypoint.dockedShips.length
+              p
+                strong Docked:
+                |  #{waypoint.dockedShips.length}
+              ul.presence-list
+                each shipSymbol in waypoint.dockedShips
+                  li
+                    a(href=`/fleet/my/ships/${shipSymbol}`)= shipSymbol
+            else
+              p
+                strong Docked:
+                |  0
+
+            if waypoint.orbitingShips && waypoint.orbitingShips.length
+              p
+                strong In Orbit:
+                |  #{waypoint.orbitingShips.length}
+              ul.presence-list
+                each shipSymbol in waypoint.orbitingShips
+                  li
+                    a(href=`/fleet/my/ships/${shipSymbol}`)= shipSymbol
+            else
+              p
+                strong In Orbit:
+                |  0
+
+          .actions-row
+            a(href=`/systems/${selectedSystem}/waypoints/${waypoint.symbol}`) Waypoint JSON
+            if waypoint.hasMarketplace
+              a(href=`/systems/${selectedSystem}/waypoints/${waypoint.symbol}/market/view`) Market
+            if waypoint.hasShipyard
+              a(href=`/systems/${selectedSystem}/waypoints/${waypoint.symbol}/shipyard`) Shipyard JSON
+            if waypoint.isJumpGate
+              a(href=`/systems/${selectedSystem}/waypoints/${waypoint.symbol}/jump-gate/view`) Jump Gate
+            if waypoint.isUnderConstruction
+              a(href=`/systems/${selectedSystem}/waypoints/${waypoint.symbol}/construction/view`) Construction
+  else
+    .ship-card
+      h2 No waypoints found
+      p There are currently no waypoints available for this system.
+
+  if debugData
+    .debug-toggle-wrap
+      button.debug-toggle#debugToggle(type="button") Show Debug
+    .debug-card.hidden#debugCard
+      p
+        strong Debug Symbol Matching
+      p Selected System: #{debugData.selectedSystem || "none"}
+      p Ship Waypoint Symbols (normalized):
+      pre= JSON.stringify(debugData.shipWaypointSymbols || [], null, 2)
+      p Listed Waypoint Symbols from API (normalized):
+      pre= JSON.stringify(debugData.listedWaypointSymbols || [], null, 2)
+      p Unmatched Ship Waypoint Symbols:
+      pre= JSON.stringify(debugData.unmatchedShipWaypointSymbols || [], null, 2)
+
+  script.
+    (() => {
+      const cards = Array.from(document.querySelectorAll(".js-waypoint-card[data-waypoint-type]"));
+      const bar = document.getElementById("typeFilterBar");
+      if (!bar || cards.length === 0) return;
+
+      const counts = cards.reduce((acc, card) => {
+        const type = card.getAttribute("data-waypoint-type") || "UNKNOWN";
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      }, {});
+
+      const sortedTypes = Object.keys(counts).sort((a, b) => a.localeCompare(b));
+      const filters = [{ type: "ALL", count: cards.length }].concat(
+        sortedTypes.map((type) => ({ type, count: counts[type] }))
+      );
+
+      const setActiveFilter = (selectedType) => {
+        cards.forEach((card) => {
+          const cardType = card.getAttribute("data-waypoint-type");
+          const show = selectedType === "ALL" || cardType === selectedType;
+          card.style.display = show ? "block" : "none";
+        });
+
+        Array.from(bar.querySelectorAll(".type-filter-btn")).forEach((button) => {
+          if (button.getAttribute("data-filter-type") === selectedType) {
+            button.classList.add("active");
+          } else {
+            button.classList.remove("active");
+          }
+        });
+      };
+
+      filters.forEach((filter) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "type-filter-btn";
+        button.setAttribute("data-filter-type", filter.type);
+
+        const label = document.createElement("span");
+        label.textContent = filter.type;
+
+        const count = document.createElement("span");
+        count.className = "type-filter-count";
+        count.textContent = String(filter.count);
+
+        button.appendChild(label);
+        button.appendChild(count);
+        button.addEventListener("click", () => setActiveFilter(filter.type));
+        bar.appendChild(button);
+      });
+
+      setActiveFilter("ALL");
+    })();
+
+  script.
+    (() => {
+      const toggle = document.getElementById("debugToggle");
+      const card = document.getElementById("debugCard");
+      if (!toggle || !card) return;
+
+      toggle.addEventListener("click", () => {
+        const isHidden = card.classList.contains("hidden");
+        if (isHidden) {
+          card.classList.remove("hidden");
+          toggle.textContent = "Hide Debug";
+        } else {
+          card.classList.add("hidden");
+          toggle.textContent = "Show Debug";
+        }
+      });
+    })();

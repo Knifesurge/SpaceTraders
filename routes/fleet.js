@@ -5,6 +5,7 @@ import { DateTime } from "luxon";
 import { FleetApi, SystemsApi, ShipType } from "spacetraders-sdk";
 import config from "../data/config.js";
 import { asyncHandler, sendSuccess } from "./http.js";
+import { getAllMyShipsCached, invalidateMyShipsCache } from "./ship-cache.js";
 
 const router = express.Router();
 const fleetApi = new FleetApi(config);
@@ -13,12 +14,109 @@ const corsOptions = {
   origin: "https://api.spacetraders.io/",
   methods: ["GET", "POST", "PATCH", "OPTIONS"],
 };
+const waypointCacheBySystem = new Map();
+const shipyardPurchaseCacheBySystem = new Map();
+
+router.use("/my/ships", (req, res, next) => {
+  if (["POST", "PATCH", "PUT", "DELETE"].includes(req.method)) {
+    invalidateMyShipsCache();
+  }
+  next();
+});
+
+const getCachedWaypointsForSystem = async (systemSymbol) => {
+  const cacheEntry = waypointCacheBySystem.get(systemSymbol);
+
+  if (cacheEntry) {
+    return cacheEntry;
+  }
+
+  const waypoints = [];
+  const pageSize = 20;
+  let page = 1;
+  let fetched = 0;
+  let total = Number.POSITIVE_INFINITY;
+
+  while (fetched < total) {
+    const waypointResponse = await systemsApi.getSystemWaypoints(systemSymbol, page, pageSize);
+    const pageData = waypointResponse.data.data || [];
+    const meta = waypointResponse.data.meta;
+    total = Number(meta?.total || pageData.length || 0);
+
+    waypoints.push(...pageData.map((waypoint) => ({
+      symbol: waypoint.symbol,
+      systemSymbol: waypoint.systemSymbol,
+      type: waypoint.type,
+      x: waypoint.x,
+      y: waypoint.y,
+      orbitals: waypoint.orbitals.map((orbital) => orbital.symbol),
+      traits: (waypoint.traits || []).map((trait) => trait.symbol),
+    })));
+
+    fetched += pageData.length;
+
+    if (pageData.length === 0 || pageData.length < pageSize) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  waypointCacheBySystem.set(systemSymbol, waypoints);
+
+  return waypoints;
+};
+
+const formatShipTypeLabel = (shipType) => (
+  String(shipType || "").replace(/^SHIP_/, "").replace(/_/g, " ")
+);
+
+const getCachedShipyardPurchaseDataForSystem = async (systemSymbol) => {
+  const cacheEntry = shipyardPurchaseCacheBySystem.get(systemSymbol);
+  if (cacheEntry) {
+    return cacheEntry;
+  }
+
+  const waypoints = await getCachedWaypointsForSystem(systemSymbol);
+  const shipyardWaypoints = waypoints.filter((waypoint) => (
+    (waypoint.traits || []).includes("SHIPYARD")
+  ));
+
+  const shipyardPurchaseRows = [];
+  for (const waypoint of shipyardWaypoints) {
+    try {
+      const shipyardResponse = await systemsApi.getShipyard(systemSymbol, waypoint.symbol);
+      const availableShipTypes = (shipyardResponse.data?.data?.shipTypes || [])
+        .map((shipType) => shipType.type)
+        .filter(Boolean);
+
+      if (availableShipTypes.length) {
+        shipyardPurchaseRows.push({
+          waypointSymbol: waypoint.symbol,
+          systemSymbol,
+          shipTypes: [...new Set(availableShipTypes)].sort((a, b) => a.localeCompare(b)),
+        });
+      }
+    } catch (error) {
+      // Skip inaccessible shipyards and continue building purchase options.
+    }
+  }
+
+  shipyardPurchaseRows.sort((a, b) => {
+    if (a.systemSymbol !== b.systemSymbol) {
+      return a.systemSymbol.localeCompare(b.systemSymbol);
+    }
+    return a.waypointSymbol.localeCompare(b.waypointSymbol);
+  });
+
+  shipyardPurchaseCacheBySystem.set(systemSymbol, shipyardPurchaseRows);
+  return shipyardPurchaseRows;
+};
 
 // GET all owned ships
 router.get("/my/ships", cors(corsOptions), asyncHandler(async (req, res) => {
-  const response = await fleetApi.getMyShips();
+  const ships = await getAllMyShipsCached(fleetApi);
   const properShips = [];
-  const ships = response.data.data;
 
   for (const ship of ships) {
     const shipData = {
@@ -34,6 +132,7 @@ router.get("/my/ships", cors(corsOptions), asyncHandler(async (req, res) => {
       status: ship.nav.status,
       origin: ship.nav.route.origin,
       destination: ship.nav.route.destination,
+      arrival: ship.nav.route.arrival,
       orbitingExtractable: true,
     };
 
@@ -54,12 +153,24 @@ router.get("/my/ships", cors(corsOptions), asyncHandler(async (req, res) => {
   });
 }));
 
-// GET a specific ship
-router.get("/my/ships/:shipSymbol", cors(corsOptions), asyncHandler(async (req, res) => {
-  const response = await fleetApi.getMyShip(req.params.shipSymbol);
+// GET a specific ship (ship IDs/symbols always contain a dash, e.g. AGENT-1)
+router.get("/my/ships/:shipId([^/]*-[^/]*)", cors(corsOptions), asyncHandler(async (req, res) => {
+  const responseData = req.session.responseData;
+  delete req.session.responseData;
+  const shipId = req.params.shipId;
+
+  const [shipResponse, cargoResponse] = await Promise.all([
+    fleetApi.getMyShip(shipId),
+    fleetApi.getMyShipCargo(shipId),
+  ]);
+
   sendSuccess(req, res, {
-    view: "response",
-    locals: response.data,
+    view: "shipDetail",
+    locals: {
+      ship: shipResponse.data.data,
+      cargo: cargoResponse.data.data,
+      jettisonData: responseData,
+    },
   });
 }));
 
@@ -68,18 +179,7 @@ router.get(
   "/my/ships/:shipSymbol/cargo",
   cors(corsOptions),
   asyncHandler(async (req, res) => {
-    const responseData = req.session.responseData;
-    delete req.session.responseData;
-
-    const response = await fleetApi.getMyShipCargo(req.params.shipSymbol);
-    sendSuccess(req, res, {
-      view: "shipCargo",
-      locals: {
-        data: response.data.data,
-        shipSymbol: req.params.shipSymbol,
-        jettisonData: responseData,
-      },
-    });
+    res.redirect(`/fleet/my/ships/${req.params.shipSymbol}#cargo`);
   })
 );
 
@@ -97,7 +197,7 @@ router.post(
       cargoUnits,
     };
 
-    res.redirect(`/fleet/my/ships/${shipSymbol}/cargo`);
+    res.redirect(`/fleet/my/ships/${shipSymbol}#cargo`);
   })
 );
 
@@ -177,26 +277,24 @@ router.post("/my/ships/dock", cors(corsOptions), asyncHandler(async (req, res) =
 
 // GET the ship navigation form
 router.get("/my/ships/navigate", cors(corsOptions), asyncHandler(async (req, res) => {
-  const myShipResponse = await fleetApi.getMyShips();
+  const myShips = await getAllMyShipsCached(fleetApi);
   const shipData = [];
-  for (const ship of myShipResponse.data.data) {
+  for (const ship of myShips) {
     shipData.push({
       symbol: ship.symbol,
       systemSymbol: ship.nav.systemSymbol,
+      waypointSymbol: ship.nav.waypointSymbol,
+      flightMode: ship.nav.flightMode,
+      engineSpeed: ship.engine.speed,
     });
   }
 
   const currentSystems = [...new Set(shipData.map((ship) => ship.systemSymbol))];
   const waypointData = [];
   for (const system of currentSystems) {
-    const waypointResponse = await systemsApi.getSystemWaypoints(system);
-    for (const waypoint of waypointResponse.data.data) {
-      waypointData.push({
-        symbol: waypoint.symbol,
-        systemSymbol: waypoint.systemSymbol,
-        type: waypoint.type,
-        orbitals: waypoint.orbitals.map((orbital) => orbital.symbol),
-      });
+    const cachedWaypoints = await getCachedWaypointsForSystem(system);
+    for (const waypoint of cachedWaypoints) {
+      waypointData.push(waypoint);
     }
   }
 
@@ -233,16 +331,32 @@ router.post(
   })
 );
 
-const shipPurchaseOptions = Object.values(ShipType).map((value) => ({
-  value,
-  label: value.replace(/^SHIP_/, "").replace(/_/g, " "),
-}));
-
 // GET ship purchase form
 router.get("/my/ships/purchase", cors(corsOptions), asyncHandler(async (req, res) => {
+  const myShips = await getAllMyShipsCached(fleetApi);
+  const currentSystems = [...new Set(myShips.map((ship) => ship.nav.systemSymbol))];
+
+  const purchaseWaypoints = [];
+  for (const systemSymbol of currentSystems) {
+    const shipyardPurchaseRows = await getCachedShipyardPurchaseDataForSystem(systemSymbol);
+    purchaseWaypoints.push(...shipyardPurchaseRows);
+  }
+
+  const purchaseWaypointOptions = purchaseWaypoints.map((waypoint) => ({
+    waypointSymbol: waypoint.waypointSymbol,
+    systemSymbol: waypoint.systemSymbol,
+    shipTypes: waypoint.shipTypes.map((shipType) => ({
+      value: shipType,
+      label: formatShipTypeLabel(shipType),
+    })),
+  }));
+
   sendSuccess(req, res, {
     view: "shipPurchaseForm",
-    locals: { shipPurchaseOptions },
+    locals: {
+      purchaseWaypoints: purchaseWaypointOptions,
+      hasPurchaseOptions: purchaseWaypointOptions.length > 0,
+    },
   });
 }));
 

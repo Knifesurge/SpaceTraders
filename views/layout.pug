@@ -1,21 +1,102 @@
 //- layout.pug
-doctype html 
-html 
-    head 
+doctype html
+html
+    head
         title #{title || "My SpaceTraders Client"}
+        meta(charset="utf-8")
+        meta(name="viewport" content="width=device-width, initial-scale=1")
         style.
-            body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
-            .topbar { display: flex; background: #333; color: white; padding: 10px; }
-            .topbar a { color: white; margin-right: 20px; text-decoration: none; }
-            .topbar a.active { font-weight: bold; text-decoration: underline; }
-            .container { padding: 20px; }
-            .ship-card { background: white; padding: 15px; margin-bottom: 15px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-            button { margin-top: 5px; }
+            :root {
+                --bg-0: #eef2f7;
+                --bg-1: #f8fafc;
+                --ink-0: #0f172a;
+                --ink-1: #334155;
+                --ink-2: #64748b;
+                --line: #d7e0ea;
+                --card: #ffffff;
+                --brand: #0f766e;
+                --brand-strong: #115e59;
+                --nav-bg: #0f172a;
+            }
 
-    body 
+            * { box-sizing: border-box; }
+
+            body {
+                margin: 0;
+                padding: 0;
+                color: var(--ink-0);
+                background:
+                    radial-gradient(circle at 8% -12%, #dbeafe 0%, rgba(219, 234, 254, 0) 32%),
+                    radial-gradient(circle at 92% -18%, #ccfbf1 0%, rgba(204, 251, 241, 0) 30%),
+                    linear-gradient(180deg, var(--bg-1), var(--bg-0));
+                font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+                min-height: 100vh;
+            }
+
+            .topbar {
+                position: sticky;
+                top: 0;
+                z-index: 20;
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                flex-wrap: wrap;
+                background: var(--nav-bg);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                padding: 10px 16px;
+                box-shadow: 0 6px 20px rgba(15, 23, 42, 0.2);
+            }
+
+            .topbar a {
+                color: #dbeafe;
+                text-decoration: none;
+                font-size: 0.9rem;
+                font-weight: 700;
+                padding: 6px 10px;
+                border-radius: 6px;
+                border: 1px solid transparent;
+                transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+            }
+
+            .topbar a:hover,
+            .topbar a.active {
+                background: rgba(148, 163, 184, 0.18);
+                border-color: rgba(148, 163, 184, 0.34);
+                color: #ffffff;
+            }
+
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+
+            .ship-card {
+                background: var(--card);
+                border-radius: 10px;
+                border: 1px solid var(--line);
+                padding: 15px;
+                margin-bottom: 14px;
+                box-shadow: 0 10px 26px rgba(15, 23, 42, 0.07);
+            }
+
+            button {
+                margin-top: 5px;
+            }
+
+            @media (max-width: 680px) {
+                .container {
+                    padding: 14px;
+                }
+                .topbar {
+                    padding: 10px 12px;
+                }
+            }
+
+    body
         //- Top Navigation Bar
-        include topbar.pug 
+        include topbar.pug
 
         //- Page-specific content inserted here
-        .container 
+        .container
             block content

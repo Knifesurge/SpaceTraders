@@ -10,9 +10,16 @@ export const sendSuccess = (req, res, options = {}) => {
   const { data, view, locals = {}, status = 200 } = options;
 
   if (view) {
-    return res.status(status).render(view, {
+    const viewLocals = {
       ...locals,
-      data,
+    };
+
+    if (data !== undefined) {
+      viewLocals.data = data;
+    }
+
+    return res.status(status).render(view, {
+      ...viewLocals,
     });
   }
 

@@ -1,18 +1,181 @@
-//- shipPurchaseForm.pug
-doctype html
-html
-  head
-    title Ship Form
-  body
-    h1 Enter Ship Details
+extends layout
+
+block content
+  style.
+    .purchase-card {
+      max-width: 760px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 18px;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+      border: 1px solid #dbe3ec;
+    }
+    .purchase-card h1 {
+      margin: 0 0 8px;
+      font-size: 1.6rem;
+    }
+    .purchase-sub {
+      margin: 0 0 14px;
+      color: #475569;
+      font-size: 0.94rem;
+      line-height: 1.4;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .field-row label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .field-row select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      font-size: 0.95rem;
+      background: #fff;
+      box-sizing: border-box;
+    }
+    .field-row select:disabled {
+      background: #f1f5f9;
+      color: #64748b;
+      cursor: not-allowed;
+    }
+    .field-note {
+      margin: 4px 0 0;
+      font-size: 0.85rem;
+      color: #334155;
+    }
+    .notice {
+      border-left: 4px solid #f59e0b;
+      background: #fffbeb;
+      color: #92400e;
+      border-radius: 6px;
+      padding: 9px 11px;
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+    .actions button,
+    .actions a {
+      border: 0;
+      background: #0f766e;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 7px;
+      text-decoration: none;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .actions a.secondary,
+    .actions button.secondary {
+      background: #475569;
+    }
+
+  - const waypointOptions = purchaseWaypoints || []
+
+  .purchase-card
+    h1 Ship Purchase
+    p.purchase-sub
+      | Choose a shipyard waypoint first, then select one of the ship models currently sold there.
+
+    if !hasPurchaseOptions
+      .notice
+        | No shipyard purchase options are currently available from systems where you have ships.
+
     form(action="/fleet/my/ships/purchaseship" method="POST")
-      label(for="waypointSymbol") Waypoint Symbol:
-      input(type="text" id="waypointSymbol" name="waypointSymbol" required)
-      br
-      label(for="selection") Choose an Option:
-      select(id="selection" name="shipType" required)
-        option(value="" disabled selected) -- Select an option --
-        each option in shipPurchaseOptions
-          option(value=option.value) #{option.label}
-      br
-      button(type="submit") Submit
+      .form-grid
+        .field-row
+          label(for="waypointSymbol") Shipyard Waypoint
+          select(id="waypointSymbol" name="waypointSymbol" required disabled=!hasPurchaseOptions)
+            if hasPurchaseOptions
+              option(value="" selected disabled) -- Select a shipyard waypoint --
+              each waypoint in waypointOptions
+                option(value=waypoint.waypointSymbol)
+                  | #{waypoint.waypointSymbol} (#{waypoint.systemSymbol})
+            else
+              option(value="" selected disabled) -- No shipyards available --
+          p.field-note(id="waypointInfo") Select a waypoint to load available ship models.
+
+        .field-row
+          label(for="shipType") Ship Model
+          select(id="shipType" name="shipType" required disabled=true)
+            option(value="" selected disabled) -- Select a shipyard waypoint first --
+          p.field-note(id="shipTypeInfo") Available models depend on the selected shipyard.
+
+        .actions
+          button(type="submit" disabled=!hasPurchaseOptions) Purchase Ship
+          a.secondary(href="/fleet/my/ships") Back to Fleet
+
+  script.
+    (() => {
+      const purchaseWaypoints = !{JSON.stringify(purchaseWaypoints || [])};
+      const waypointSelect = document.getElementById("waypointSymbol");
+      const shipTypeSelect = document.getElementById("shipType");
+      const waypointInfo = document.getElementById("waypointInfo");
+      const shipTypeInfo = document.getElementById("shipTypeInfo");
+
+      if (!waypointSelect || !shipTypeSelect) return;
+
+      const waypointMap = {};
+      for (const waypoint of purchaseWaypoints) {
+        waypointMap[waypoint.waypointSymbol] = waypoint;
+      }
+
+      const resetShipType = (placeholderText) => {
+        shipTypeSelect.innerHTML = "";
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = placeholderText;
+        option.selected = true;
+        option.disabled = true;
+        shipTypeSelect.appendChild(option);
+      };
+
+      const setShipTypesForWaypoint = (waypointSymbol) => {
+        const waypoint = waypointMap[waypointSymbol];
+        if (!waypoint) {
+          shipTypeSelect.disabled = true;
+          resetShipType("-- Select a shipyard waypoint first --");
+          waypointInfo.textContent = "Select a waypoint to load available ship models.";
+          shipTypeInfo.textContent = "Available models depend on the selected shipyard.";
+          return;
+        }
+
+        const shipTypes = waypoint.shipTypes || [];
+        shipTypeSelect.disabled = shipTypes.length === 0;
+        resetShipType(
+          shipTypes.length ? "-- Select a ship model --" : "-- No ship models available --"
+        );
+
+        for (const shipType of shipTypes) {
+          const option = document.createElement("option");
+          option.value = shipType.value;
+          option.textContent = shipType.label;
+          shipTypeSelect.appendChild(option);
+        }
+
+        waypointInfo.textContent = `System: ${waypoint.systemSymbol} | Waypoint: ${waypoint.waypointSymbol}`;
+        shipTypeInfo.textContent = shipTypes.length
+          ? `${shipTypes.length} ship models currently listed at this shipyard.`
+          : "No ship models are currently listed at this shipyard.";
+      };
+
+      waypointSelect.addEventListener("change", () => {
+        setShipTypesForWaypoint(waypointSelect.value);
+      });
+
+      setShipTypesForWaypoint("");
+    })();

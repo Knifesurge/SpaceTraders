@@ -1,18 +1,308 @@
 extends layout
 
 block content
-  h1 SpaceTraders Status
-  p Status: #{data.status}
-  if data.version
-    p Version: #{data.version}
-  if data.resetDate
-    p Reset Date: #{data.resetDate}
-  h2 Announcements
-  if data.announcements && data.announcements.length
-    ul
-      each item in data.announcements
-        li= item.title
-  else
-    p No announcements.
-  h2 Raw Response
-  pre= JSON.stringify(data, null, 2)
+  style.
+    .status-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .status-title {
+      margin: 0;
+      font-size: 1.85rem;
+      line-height: 1.1;
+    }
+    .status-sub {
+      margin: 5px 0 0;
+      color: #475569;
+      font-size: 0.95rem;
+    }
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 5px 10px;
+      color: #fff;
+      background: #334155;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+    .status-chip.online {
+      background: #0f766e;
+    }
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .overview-card {
+      background: #fff;
+      border: 1px solid #dbe3ec;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .overview-label {
+      margin: 0;
+      color: #64748b;
+      font-size: 0.78rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .overview-value {
+      margin: 4px 0 0;
+      color: #0f172a;
+      font-size: 1.06rem;
+      font-weight: 700;
+    }
+    .leaderboards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 14px;
+      margin-bottom: 14px;
+      align-items: start;
+    }
+    .section-title {
+      margin: 0 0 8px;
+      font-size: 1.05rem;
+    }
+    .leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .leaderboard-table th,
+    .leaderboard-table td {
+      padding: 8px 9px;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
+      vertical-align: top;
+    }
+    .leaderboard-table th {
+      color: #475569;
+      font-size: 0.8rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .leaderboard-table td.rank {
+      width: 54px;
+      font-weight: 700;
+      color: #334155;
+    }
+    .leaderboard-table td.value {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .announcement-list {
+      display: grid;
+      gap: 10px;
+    }
+    .announcement-item {
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid #0ea5e9;
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 10px 12px;
+    }
+    .announcement-item h3 {
+      margin: 0 0 6px;
+      font-size: 0.97rem;
+      color: #0f172a;
+    }
+    .announcement-item p {
+      margin: 0;
+      color: #334155;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+    .status-footer {
+      margin-top: 16px;
+      padding: 14px 0 0;
+      border-top: 1px solid #cbd5e1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .footer-label {
+      margin: 0;
+      color: #64748b;
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 700;
+    }
+    .footer-links {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .footer-links a {
+      color: #0f766e;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .footer-links a:hover {
+      text-decoration: underline;
+    }
+    .footer-sep {
+      color: #94a3b8;
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 700px) {
+      .status-footer {
+        align-items: flex-start;
+      }
+    }
+    .muted {
+      margin: 0;
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+
+  - const statusValue = (data && data.status) ? data.status : "UNKNOWN"
+  - const normalizedStatus = String(statusValue).toLowerCase()
+  - const versionValue = data && data.version ? data.version : "unknown"
+  - const resetDateValue = data && data.resetDate ? data.resetDate : "unknown"
+  - const nextResetIso = data && data.serverResets && data.serverResets.next ? data.serverResets.next : ""
+  - const resetFrequency = data && data.serverResets && data.serverResets.frequency ? data.serverResets.frequency : "unknown"
+  - const mostCredits = data && data.leaderboards && data.leaderboards.mostCredits ? data.leaderboards.mostCredits : []
+  - const mostCharts = data && data.leaderboards && data.leaderboards.mostSubmittedCharts ? data.leaderboards.mostSubmittedCharts : []
+  - const announcements = data && data.announcements ? data.announcements : []
+  - const links = data && data.links ? data.links : []
+
+  .status-header
+    div
+      h1.status-title Global Status
+      p.status-sub Live server state, leaderboards, and reset schedule.
+    span(class=`status-chip ${normalizedStatus === "online" ? "online" : ""}`)= statusValue
+
+  .overview-grid
+    .overview-card
+      p.overview-label Version
+      p.overview-value= versionValue
+    .overview-card
+      p.overview-label Last Reset Date
+      p.overview-value= resetDateValue
+    .overview-card
+      p.overview-label Next Reset
+      p.overview-value.js-reset-next(data-next-reset=nextResetIso)= nextResetIso || "Unavailable"
+    .overview-card
+      p.overview-label Countdown
+      p.overview-value.js-reset-countdown(data-next-reset=nextResetIso) --:--:--
+      p.muted Frequency: #{resetFrequency}
+
+  .leaderboards-grid
+    .ship-card
+      h2.section-title Most Credits
+      if mostCredits.length
+        table.leaderboard-table
+          thead
+            tr
+              th Rank
+              th Agent
+              th Credits
+          tbody
+            each entry, idx in mostCredits
+              tr
+                td.rank ##{idx + 1}
+                td= entry.agentSymbol
+                td.value= Number(entry.credits || 0).toLocaleString()
+      else
+        p.muted No leaderboard data available.
+
+    .ship-card
+      h2.section-title Most Submitted Charts
+      if mostCharts.length
+        table.leaderboard-table
+          thead
+            tr
+              th Rank
+              th Agent
+              th Charts
+          tbody
+            each entry, idx in mostCharts
+              tr
+                td.rank ##{idx + 1}
+                td= entry.agentSymbol
+                td.value= Number(entry.chartCount || 0).toLocaleString()
+      else
+        p.muted No leaderboard data available.
+
+  .ship-card
+    h2.section-title Announcements
+    if announcements.length
+      .announcement-list
+        each item in announcements
+          .announcement-item
+            h3= item.title
+            p= item.body
+    else
+      p.muted No announcements.
+
+  footer.status-footer
+    p.footer-label Company Links
+    if links.length
+      nav.footer-links(aria-label="Company links")
+        each link, idx in links
+          a(href=link.url target="_blank" rel="noopener noreferrer")= link.name
+          if idx !== links.length - 1
+            span.footer-sep |
+    else
+      p.muted No links provided.
+
+  script.
+    (() => {
+      const nextNode = document.querySelector(".js-reset-next[data-next-reset]");
+      const countdownNode = document.querySelector(".js-reset-countdown[data-next-reset]");
+      if (!nextNode || !countdownNode) return;
+
+      const nextResetRaw = nextNode.getAttribute("data-next-reset") || "";
+      const nextResetMs = Date.parse(nextResetRaw);
+
+      const formatDuration = (ms) => {
+        const safeMs = Math.max(ms, 0);
+        const totalSeconds = Math.floor(safeMs / 1000);
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        const hh = String(hours).padStart(2, "0");
+        const mm = String(minutes).padStart(2, "0");
+        const ss = String(seconds).padStart(2, "0");
+        if (days > 0) {
+          return `${days}d ${hh}:${mm}:${ss}`;
+        }
+        return `${hh}:${mm}:${ss}`;
+      };
+
+      if (!Number.isNaN(nextResetMs)) {
+        nextNode.textContent = new Date(nextResetMs).toLocaleString();
+      } else {
+        countdownNode.textContent = "Unavailable";
+        return;
+      }
+
+      const tick = () => {
+        const remaining = nextResetMs - Date.now();
+        if (remaining <= 0) {
+          countdownNode.textContent = "Reset window reached";
+          return;
+        }
+        countdownNode.textContent = formatDuration(remaining);
+      };
+
+      tick();
+      setInterval(tick, 1000);
+    })();

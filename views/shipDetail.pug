@@ -1,0 +1,328 @@
+extends layout
+
+block content
+  style.
+    .detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .detail-title {
+      margin: 0;
+      font-size: 1.85rem;
+      line-height: 1.1;
+    }
+    .detail-sub {
+      margin: 4px 0 0;
+      color: #475569;
+      font-size: 0.95rem;
+    }
+    .detail-links {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .detail-links a {
+      text-decoration: none;
+      background: #0f766e;
+      color: #fff;
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      display: inline-block;
+    }
+    .detail-links a.secondary {
+      background: #475569;
+    }
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #fff;
+      background: #334155;
+    }
+    .status-chip.docked {
+      background: #2563eb;
+    }
+    .status-chip.in-transit {
+      background: #dc2626;
+    }
+    .status-chip.in-orbit {
+      background: #7c3aed;
+    }
+    .section-title {
+      margin: 0 0 8px;
+      font-size: 0.9rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-weight: 700;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .stat-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .stat-card p {
+      margin: 0;
+    }
+    .stat-label {
+      color: #64748b;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-weight: 700;
+    }
+    .stat-value {
+      margin-top: 5px;
+      color: #0f172a;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 8px 12px;
+    }
+    .meta-grid p {
+      margin: 0;
+      font-size: 0.93rem;
+    }
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .meter-block p {
+      margin: 0 0 6px;
+      font-size: 0.9rem;
+    }
+    .meter-track {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      overflow: hidden;
+    }
+    .meter-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #0f766e, #0ea5e9);
+    }
+    .route-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .route-node {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 9px 10px;
+      background: #f8fafc;
+    }
+    .route-node p {
+      margin: 0 0 3px;
+      font-size: 0.88rem;
+    }
+    .cargo-header {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 1.15rem;
+    }
+    .cargo-row {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+    .cargo-row:last-child {
+      margin-bottom: 0;
+    }
+    .cargo-row p {
+      margin: 0 0 4px;
+      font-size: 0.9rem;
+    }
+    .cargo-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .cargo-actions output {
+      min-width: 28px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .cargo-actions input[type="range"] {
+      width: 180px;
+    }
+    .cargo-actions button {
+      border: 0;
+      border-radius: 6px;
+      padding: 6px 10px;
+      background: #111827;
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .alert {
+      border-left: 4px solid #16a34a;
+      background: #f0fdf4;
+      color: #166534;
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin: 10px 0;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 800px) {
+      .telemetry-grid,
+      .route-grid {
+        grid-template-columns: 1fr;
+      }
+      .cargo-actions input[type="range"] {
+        width: 100%;
+      }
+    }
+
+  - const normalizedStatus = (ship?.nav?.status || "").toLowerCase().replace("_", "-")
+  - const fuelCurrent = Number(ship?.fuel?.current || 0)
+  - const fuelCapacity = Number(ship?.fuel?.capacity || 0)
+  - const cargoUnits = Number(ship?.cargo?.units || 0)
+  - const cargoCapacity = Number(ship?.cargo?.capacity || 0)
+  - const fuelPercent = fuelCapacity > 0 ? Math.round((fuelCurrent / fuelCapacity) * 100) : 0
+  - const cargoPercent = cargoCapacity > 0 ? Math.round((cargoUnits / cargoCapacity) * 100) : 0
+
+  .detail-header
+    div
+      h1.detail-title Ship #{ship.symbol}
+      p.detail-sub Full systems, route, and cargo operations for this vessel.
+    .detail-links
+      a(href="/fleet/my/ships") Back to Fleet
+      a.secondary(href="/fleet/my/ships/navigate") Navigate
+      a.secondary(href="#cargo") Cargo Hold
+
+  .stats-grid
+    .stat-card
+      p.stat-label Status
+      p.stat-value
+        span(class=`status-chip ${normalizedStatus}`)= ship.nav.status
+    .stat-card
+      p.stat-label Flight Mode
+      p.stat-value= ship.nav.flightMode
+    .stat-card
+      p.stat-label Fuel
+      p.stat-value #{fuelCurrent}/#{fuelCapacity}
+    .stat-card
+      p.stat-label Cargo
+      p.stat-value #{cargoUnits}/#{cargoCapacity}
+
+  .ship-card
+    p.section-title Telemetry
+    .meta-grid
+      p
+        strong System:
+        |  #{ship.nav.systemSymbol}
+      p
+        strong Waypoint:
+        |  #{ship.nav.waypointSymbol}
+      p
+        strong Frame:
+        |  #{ship.frame.symbol}
+      p
+        strong Reactor:
+        |  #{ship.reactor.symbol}
+      p
+        strong Engine:
+        |  #{ship.engine.symbol} (speed #{ship.engine.speed})
+
+    .telemetry-grid
+      .meter-block
+        p
+          strong Fuel Level:
+          |  #{fuelPercent}%
+        .meter-track
+          .meter-fill(style=`width: ${fuelPercent}%`)
+      .meter-block
+        p
+          strong Cargo Utilization:
+          |  #{cargoPercent}%
+        .meter-track
+          .meter-fill(style=`width: ${cargoPercent}%`)
+
+  .ship-card
+    p.section-title Route
+    .route-grid
+      .route-node
+        p
+          strong Origin
+        p #{ship.nav.route.origin.symbol}
+        p #{ship.nav.route.origin.type}
+      .route-node
+        p
+          strong Destination
+        p #{ship.nav.route.destination.symbol}
+        p #{ship.nav.route.destination.type}
+    .meta-grid(style="margin-top:10px;")
+      p
+        strong Departure Time:
+        |  #{ship.nav.route.departureTime}
+      p
+        strong Arrival Time:
+        |  #{ship.nav.route.arrival}
+
+  .ship-card#cargo
+    h2.cargo-header Cargo Hold
+    p
+      strong Capacity:
+      |  #{cargo.units}/#{cargo.capacity}
+
+    if jettisonData
+      .alert
+        | Successfully jettisoned #{jettisonData.cargoUnits} units of #{jettisonData.cargoSymbol}.
+
+    if cargo.inventory && cargo.inventory.length
+      each item, i in cargo.inventory
+        .cargo-row
+          p
+            strong #{item.name}
+            |  (#{item.symbol})
+          p #{item.description}
+          p
+            strong Units:
+            |  #{item.units}
+
+          form(action=`/fleet/my/ships/${ship.symbol}/jettison`, method="post")
+            input(type="hidden", name="shipSymbol", value=ship.symbol)
+            input(type="hidden", name="cargoSymbol", value=item.symbol)
+            .cargo-actions
+              input(
+                type="range"
+                id=`cargoUnits-${i}`
+                name="cargoUnits"
+                min=1
+                max=item.units
+                value=1
+                step="1"
+                oninput=`document.getElementById('cargoOutput-${i}').textContent = this.value`
+              )
+              output(id=`cargoOutput-${i}`) 1
+              button(type="submit") Jettison
+    else
+      p Cargo hold is empty.
