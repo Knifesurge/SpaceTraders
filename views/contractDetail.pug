@@ -1,0 +1,20 @@
+extends layout
+
+block content
+  h1 Contract Detail
+  p ID: #{data.id}
+  p Accepted: #{data.accepted}
+  p Fulfilled: #{data.fulfilled}
+  p Deadline: #{data.terms.deadline}
+  h2 Deliverables
+  if data.terms && data.terms.deliver
+    each item in data.terms.deliver
+      .ship-card
+        p Trade Symbol: #{item.tradeSymbol}
+        p Destination: #{item.destinationSymbol}
+        p Required: #{item.unitsRequired}
+        p Fulfilled: #{item.unitsFulfilled}
+  else
+    p No deliverables on this contract.
+  h2 Raw Response
+  pre= JSON.stringify(data, null, 2)

@@ -1,0 +1,18 @@
+extends layout
+
+block content
+  h1 Construction Site
+  p Waypoint: #{waypointSymbol}
+  p System: #{systemSymbol}
+  p Complete: #{data.isComplete}
+  h2 Materials
+  if data.materials && data.materials.length
+    each material in data.materials
+      .ship-card
+        p Trade Symbol: #{material.tradeSymbol}
+        p Required: #{material.required}
+        p Fulfilled: #{material.fulfilled}
+  else
+    p No construction materials listed.
+  h2 Raw Response
+  pre= JSON.stringify(data, null, 2)

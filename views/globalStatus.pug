@@ -1,0 +1,18 @@
+extends layout
+
+block content
+  h1 SpaceTraders Status
+  p Status: #{data.status}
+  if data.version
+    p Version: #{data.version}
+  if data.resetDate
+    p Reset Date: #{data.resetDate}
+  h2 Announcements
+  if data.announcements && data.announcements.length
+    ul
+      each item in data.announcements
+        li= item.title
+  else
+    p No announcements.
+  h2 Raw Response
+  pre= JSON.stringify(data, null, 2)

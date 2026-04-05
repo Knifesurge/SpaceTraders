@@ -1,0 +1,19 @@
+extends layout
+
+block content
+  h1 Market
+  p Waypoint: #{waypointSymbol}
+  p System: #{systemSymbol}
+  h2 Trade Goods
+  if data.tradeGoods && data.tradeGoods.length
+    each good in data.tradeGoods
+      .ship-card
+        p Symbol: #{good.symbol}
+        p Type: #{good.type}
+        p Supply: #{good.supply}
+        p Buy: #{good.purchasePrice}
+        p Sell: #{good.sellPrice}
+  else
+    p No trade goods available.
+  h2 Raw Response
+  pre= JSON.stringify(data, null, 2)

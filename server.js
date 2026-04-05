@@ -6,6 +6,10 @@ import AgentRouter from "./routes/agent.js";
 import ContractRouter from "./routes/contract.js";
 import SystemsRouter from "./routes/system.js";
 import FleetRouter from "./routes/fleet.js";
+import FactionRouter from "./routes/faction.js";
+import GlobalRouter from "./routes/global.js";
+import DataRouter from "./routes/data.js";
+import { apiErrorHandler } from "./routes/http.js";
 import dotenv from "dotenv";
 
 dotenv.config({ path: "./data/.env" });
@@ -34,6 +38,9 @@ app.use("/agent", AgentRouter);
 app.use("/contracts", ContractRouter);
 app.use("/systems", SystemsRouter);
 app.use("/fleet", FleetRouter);
+app.use("/factions", FactionRouter);
+app.use("/global", GlobalRouter);
+app.use("/data", DataRouter);
 
 app.get("/", (req, res) => {
   res.render("index", {
@@ -41,6 +48,8 @@ app.get("/", (req, res) => {
     message: "Welcome to the SpaceTraders API",
   });
 });
+
+app.use(apiErrorHandler);
 
 app.listen(3000, () => {
   console.log("Server is running on port 3000");

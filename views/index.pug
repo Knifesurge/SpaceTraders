@@ -1,8 +1,42 @@
-//- index.pug
-html
-    head
-        title= title
-    body
-        h1= message
-        p Welcome to #{title}
+extends layout
+
+block content
+    h1= message
+    p Use this page as your control panel for the app routes.
+
+    .ship-card
+        h2 Fleet Views
+        ul
+            li
+                a(href="/fleet/my/ships") My Ships
+            li
+                a(href="/fleet/my/ships/navigate") Navigate Form
+            li
+                a(href="/fleet/my/ships/purchase") Purchase Ship Form
+
+    .ship-card
+        h2 Contract Views
+        ul
+            li
+                a(href="/contracts/view") Contracts List
+
+    .ship-card
+        h2 Global Views
+        ul
+            li
+                a(href="/global/status/view") Server Status
+
+    .ship-card
+        h2 Core JSON Endpoints
+        ul
+            li
+                a(href="/agent/my/agent") My Agent
+            li
+                a(href="/factions") Factions
+            li
+                a(href="/systems") Systems
+            li
+                a(href="/contracts") Contracts
+            li
+                a(href="/data/supply-chain") Supply Chain
         

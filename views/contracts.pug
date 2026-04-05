@@ -1,0 +1,14 @@
+extends layout
+
+block content
+  h1 Contracts
+  if data && data.length
+    each contract in data
+      .ship-card
+        h2= contract.id
+        p Accepted: #{contract.accepted}
+        p Fulfilled: #{contract.fulfilled}
+        p Expires: #{contract.terms.deadline}
+        a(href=`/contracts/${contract.id}/view`) Open details
+  else
+    p No contracts found.

@@ -1,0 +1,15 @@
+extends layout
+
+block content
+  h1 Jump Gate
+  p Waypoint: #{waypointSymbol}
+  p System: #{systemSymbol}
+  if data.connectedSystems && data.connectedSystems.length
+    h2 Connected Systems
+    ul
+      each connected in data.connectedSystems
+        li= connected.symbol
+  else
+    p No connected systems listed.
+  h2 Raw Response
+  pre= JSON.stringify(data, null, 2)

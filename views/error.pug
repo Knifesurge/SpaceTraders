@@ -1,0 +1,6 @@
+extends layout
+
+block content
+  h1 Request Error
+  p Status: #{status}
+  pre= JSON.stringify(payload, null, 2)
