@@ -1,0 +1,135 @@
+[
+  {
+    "cachedAt": 1775431186791,
+    "waypointSymbol": "X1-XC59-G53",
+    "systemSymbol": "X1-XC59",
+    "exports": [
+      {
+        "symbol": "FERTILIZERS",
+        "name": "Fertilizers",
+        "description": "Specialized chemicals used to enrich the soil and promote plant growth on newly-colonized planets."
+      },
+      {
+        "symbol": "FUEL",
+        "name": "Fuel",
+        "description": "High-energy fuel used in spacecraft propulsion systems to enable long-distance space travel."
+      },
+      {
+        "symbol": "PLASTICS",
+        "name": "Plastics",
+        "description": "A wide range of plastic materials used in various applications, including packaging, construction, and manufacturing."
+      }
+    ],
+    "imports": [
+      {
+        "symbol": "HYDROCARBON",
+        "name": "Hydrocarbons",
+        "description": "A highly-valued substance used in the production of fuels, plastics, and other industrial products."
+      },
+      {
+        "symbol": "LIQUID_HYDROGEN",
+        "name": "Liquid Hydrogen",
+        "description": "A highly efficient and lightweight fuel used in advanced propulsion systems."
+      },
+      {
+        "symbol": "LIQUID_NITROGEN",
+        "name": "Liquid Nitrogen",
+        "description": "A cryogenic fluid used in a variety of applications, including refrigeration and cryogenic freezing."
+      }
+    ],
+    "exchange": [],
+    "tradeGoods": [
+      {
+        "symbol": "FERTILIZERS",
+        "type": "EXPORT",
+        "tradeVolume": 60,
+        "supply": "HIGH",
+        "purchasePrice": 136,
+        "sellPrice": 65,
+        "activity": "WEAK"
+      },
+      {
+        "symbol": "FUEL",
+        "type": "EXPORT",
+        "tradeVolume": 60,
+        "supply": "HIGH",
+        "purchasePrice": 56,
+        "sellPrice": 27,
+        "activity": "WEAK"
+      },
+      {
+        "symbol": "HYDROCARBON",
+        "type": "IMPORT",
+        "tradeVolume": 60,
+        "supply": "MODERATE",
+        "purchasePrice": 108,
+        "sellPrice": 52,
+        "activity": "WEAK"
+      },
+      {
+        "symbol": "LIQUID_HYDROGEN",
+        "type": "IMPORT",
+        "tradeVolume": 60,
+        "supply": "MODERATE",
+        "purchasePrice": 64,
+        "sellPrice": 31,
+        "activity": "WEAK"
+      },
+      {
+        "symbol": "LIQUID_NITROGEN",
+        "type": "IMPORT",
+        "tradeVolume": 60,
+        "supply": "MODERATE",
+        "purchasePrice": 70,
+        "sellPrice": 34,
+        "activity": "WEAK"
+      },
+      {
+        "symbol": "PLASTICS",
+        "type": "EXPORT",
+        "tradeVolume": 60,
+        "supply": "HIGH",
+        "purchasePrice": 127,
+        "sellPrice": 62,
+        "activity": "WEAK"
+      }
+    ],
+    "transactions": []
+  },
+  {
+    "cachedAt": 1775431597958,
+    "waypointSymbol": "X1-XC59-C41",
+    "systemSymbol": "X1-XC59",
+    "exports": [],
+    "imports": [],
+    "exchange": [
+      {
+        "symbol": "FUEL",
+        "name": "Fuel",
+        "description": "High-energy fuel used in spacecraft propulsion systems to enable long-distance space travel."
+      }
+    ],
+    "tradeGoods": [
+      {
+        "symbol": "FUEL",
+        "type": "EXCHANGE",
+        "tradeVolume": 180,
+        "supply": "MODERATE",
+        "purchasePrice": 72,
+        "sellPrice": 68
+      }
+    ],
+    "transactions": [
+      {
+        "waypointSymbol": "X1-XC59-C41",
+        "shipSymbol": "KNIFESURGE-1",
+        "tradeSymbol": "FUEL",
+        "type": "PURCHASE",
+        "units": 1,
+        "pricePerUnit": 72,
+        "totalPrice": 72,
+        "timestamp": "2026-04-05T23:23:24.234Z"
+      }
+    ]
+  }
+]

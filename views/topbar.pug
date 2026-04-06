@@ -6,3 +6,8 @@ nav.topbar
 	a(href="/systems/current/view") Systems
 	a(href="/contracts/view") Contracts
 	a(href="/global/status/view") Global
+	a(href=jsonToggleHref) JSON
+	if navStats
+		span.topbar-spacer
+		span.topbar-stat Ships: #{Number(navStats.shipCount || 0).toLocaleString()}
+		span.topbar-stat #{Number(navStats.credits || 0).toLocaleString()} C

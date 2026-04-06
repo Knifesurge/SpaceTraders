@@ -1,0 +1,233 @@
+extends layout
+
+block content
+  style.
+    .shipyard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .shipyard-title {
+      margin: 0;
+      font-size: 1.8rem;
+      line-height: 1.1;
+    }
+    .shipyard-sub {
+      margin: 5px 0 0;
+      color: #475569;
+      font-size: 0.94rem;
+    }
+    .shipyard-links {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .shipyard-links a {
+      text-decoration: none;
+      background: #475569;
+      color: #fff;
+      border-radius: 7px;
+      padding: 8px 11px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .stat-card {
+      background: #fff;
+      border: 1px solid #dbe3ec;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .stat-label {
+      margin: 0;
+      color: #64748b;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-weight: 700;
+    }
+    .stat-value {
+      margin: 5px 0 0;
+      color: #0f172a;
+      font-size: 1.06rem;
+      font-weight: 700;
+    }
+    .section-title {
+      margin: 0 0 8px;
+      font-size: 1.03rem;
+    }
+    .type-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .type-chip {
+      border-radius: 999px;
+      background: #111827;
+      color: #fff;
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 3px 8px;
+    }
+    .ships-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 12px;
+      align-items: start;
+    }
+    .ship-card-shipyard {
+      border: 1px solid #dbe3ec;
+      border-left: 4px solid #94a3b8;
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px;
+    }
+    .ship-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 7px;
+      flex-wrap: wrap;
+    }
+    .ship-card-top h3 {
+      margin: 0;
+      font-size: 1rem;
+      overflow-wrap: anywhere;
+    }
+    .ship-model {
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #0f172a;
+      padding: 2px 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .ship-desc {
+      margin: 0 0 8px;
+      color: #334155;
+      font-size: 0.87rem;
+      line-height: 1.35;
+    }
+    .ship-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px 10px;
+      margin-bottom: 8px;
+    }
+    .ship-meta p {
+      margin: 0;
+      font-size: 0.86rem;
+      color: #334155;
+    }
+    .purchase-row {
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding-top: 8px;
+      border-top: 1px dashed #cbd5e1;
+    }
+    .purchase-row p {
+      margin: 0;
+      color: #0f172a;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+    .purchase-row button {
+      border: 0;
+      border-radius: 6px;
+      padding: 7px 10px;
+      background: #0f766e;
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+      margin-top: 0;
+    }
+
+  - const shipyard = data || {}
+  - const shipTypes = shipyard.shipTypes || []
+  - const availableShips = shipyard.ships || []
+  - const transactions = shipyard.transactions || []
+
+  .shipyard-header
+    div
+      h1.shipyard-title Shipyard #{waypointSymbol}
+      p.shipyard-sub System #{systemSymbol}
+    .shipyard-links
+      a(href=`/systems/${systemSymbol}/waypoints/${waypointSymbol}/view`) Back to Waypoint
+      a(href=`/systems/${systemSymbol}/waypoints/${waypointSymbol}/shipyard`) JSON
+
+  .stats-grid
+    .stat-card
+      p.stat-label Listed Ship Types
+      p.stat-value= shipTypes.length
+    .stat-card
+      p.stat-label Buyable Ships
+      p.stat-value= availableShips.length
+    .stat-card
+      p.stat-label Transactions
+      p.stat-value= transactions.length
+    .stat-card
+      p.stat-label Mod Fee
+      p.stat-value= Number(shipyard.modificationsFee || 0).toLocaleString()
+
+  .ship-card
+    h2.section-title Ship Types
+    if shipTypes.length
+      .type-chips
+        each shipType in shipTypes
+          span.type-chip= shipType.type
+    else
+      p No ship type list is currently visible.
+
+  .ship-card
+    h2.section-title Ships Available For Purchase
+    if availableShips.length
+      .ships-grid
+        each ship in availableShips
+          .ship-card-shipyard
+            .ship-card-top
+              h3= ship.name || ship.type
+              span.ship-model= ship.type
+            p.ship-desc= ship.description || "No description available."
+
+            .ship-meta
+              p
+                strong Supply:
+                |  #{ship.supply || "Unknown"}
+              p
+                strong Activity:
+                |  #{ship.activity || "Unknown"}
+              p
+                strong Frame:
+                |  #{ship.frame && ship.frame.name ? ship.frame.name : (ship.frame && ship.frame.symbol ? ship.frame.symbol : "Unknown")}
+              p
+                strong Reactor:
+                |  #{ship.reactor && ship.reactor.name ? ship.reactor.name : (ship.reactor && ship.reactor.symbol ? ship.reactor.symbol : "Unknown")}
+              p
+                strong Engine:
+                |  #{ship.engine && ship.engine.name ? ship.engine.name : (ship.engine && ship.engine.symbol ? ship.engine.symbol : "Unknown")}
+              p
+                strong Crew Capacity:
+                |  #{ship.crew && ship.crew.capacity ? ship.crew.capacity : "Unknown"}
+
+            form(action="/fleet/my/ships/purchaseship" method="post")
+              input(type="hidden" name="waypointSymbol" value=waypointSymbol)
+              input(type="hidden" name="shipType" value=ship.type)
+              .purchase-row
+                p #{Number(ship.purchasePrice || 0).toLocaleString()} credits
+                button(type="submit") Purchase Ship
+    else
+      p No buyable ship details are visible right now. If your ship is present, this list is usually populated.

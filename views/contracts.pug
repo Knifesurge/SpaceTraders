@@ -1,14 +1,205 @@
 extends layout
 
 block content
-  h1 Contracts
-  if data && data.length
-    each contract in data
-      .ship-card
-        h2= contract.id
-        p Accepted: #{contract.accepted}
-        p Fulfilled: #{contract.fulfilled}
-        p Expires: #{contract.terms.deadline}
-        a(href=`/contracts/${contract.id}/view`) Open details
+  style.
+    .contracts-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .contracts-title {
+      margin: 0;
+      font-size: 1.8rem;
+      line-height: 1.1;
+    }
+    .contracts-sub {
+      margin: 5px 0 0;
+      color: #475569;
+      font-size: 0.95rem;
+    }
+    .contracts-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .contracts-actions a {
+      text-decoration: none;
+      background: #475569;
+      color: #fff;
+      border-radius: 7px;
+      padding: 8px 11px;
+      font-weight: 700;
+      font-size: 0.86rem;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .stat-card {
+      background: #ffffff;
+      border: 1px solid #dbe3ec;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .stat-label {
+      margin: 0;
+      color: #64748b;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-weight: 700;
+    }
+    .stat-value {
+      margin: 5px 0 0;
+      color: #0f172a;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .contracts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 14px;
+      align-items: start;
+    }
+    .contract-card {
+      align-self: start;
+      border-left: 4px solid #94a3b8;
+    }
+    .contract-card.accepted {
+      border-left-color: #0f766e;
+    }
+    .contract-card.fulfilled {
+      border-left-color: #2563eb;
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .card-top h2 {
+      margin: 0;
+      font-size: 1.03rem;
+      overflow-wrap: anywhere;
+    }
+    .chip-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .status-chip {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #fff;
+      background: #475569;
+    }
+    .status-chip.good {
+      background: #0f766e;
+    }
+    .status-chip.done {
+      background: #2563eb;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 10px;
+      margin: 8px 0 10px;
+    }
+    .meta-grid p {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+    .deliverables-summary {
+      margin: 0;
+      padding-top: 8px;
+      border-top: 1px dashed #cbd5e1;
+      color: #334155;
+      font-size: 0.88rem;
+    }
+    .card-actions {
+      margin-top: 10px;
+    }
+    .card-actions a {
+      display: inline-block;
+      text-decoration: none;
+      background: #111827;
+      color: #fff;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+  - const contracts = data || []
+  - const acceptedCount = contracts.filter((c) => c.accepted).length
+  - const fulfilledCount = contracts.filter((c) => c.fulfilled).length
+  - const openCount = contracts.length - fulfilledCount
+
+  .contracts-header
+    div
+      h1.contracts-title Contracts
+      p.contracts-sub Active, accepted, and completed contract tracking.
+    .contracts-actions
+      a(href="/") Back Home
+
+  .stats-grid
+    .stat-card
+      p.stat-label Total
+      p.stat-value= contracts.length
+    .stat-card
+      p.stat-label Open
+      p.stat-value= openCount
+    .stat-card
+      p.stat-label Accepted
+      p.stat-value= acceptedCount
+    .stat-card
+      p.stat-label Fulfilled
+      p.stat-value= fulfilledCount
+
+  if contracts.length
+    .contracts-grid
+      each contract in contracts
+        - const rowClass = contract.fulfilled ? "fulfilled" : (contract.accepted ? "accepted" : "")
+        - const deliverables = contract.terms && contract.terms.deliver ? contract.terms.deliver : []
+        - const totalRequired = deliverables.reduce((sum, d) => sum + Number(d.unitsRequired || 0), 0)
+        - const totalDelivered = deliverables.reduce((sum, d) => sum + Number(d.unitsFulfilled || 0), 0)
+        .ship-card.contract-card(class=rowClass)
+          .card-top
+            h2= contract.id
+            .chip-row
+              span(class=`status-chip ${contract.accepted ? "good" : ""}`)= contract.accepted ? "Accepted" : "Unaccepted"
+              span(class=`status-chip ${contract.fulfilled ? "done" : ""}`)= contract.fulfilled ? "Fulfilled" : "In Progress"
+
+          .meta-grid
+            p
+              strong Deadline:
+              |  #{contract.terms && contract.terms.deadline ? contract.terms.deadline : "Unknown"}
+            p
+              strong Deliverables:
+              |  #{deliverables.length}
+            p
+              strong Units Required:
+              |  #{totalRequired}
+            p
+              strong Units Delivered:
+              |  #{totalDelivered}
+
+          p.deliverables-summary
+            | Progress: #{totalDelivered}/#{totalRequired || 0} total units delivered.
+
+          .card-actions
+            a(href=`/contracts/${contract.id}/view`) View Contract
   else
-    p No contracts found.
+    .ship-card
+      h2 No contracts found
+      p No contracts are currently available for this agent.

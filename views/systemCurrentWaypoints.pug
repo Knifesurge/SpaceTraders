@@ -2,6 +2,9 @@ extends layout
 
 block content
   style.
+    body {
+      background: #eef2f7;
+    }
     .systems-header {
       display: flex;
       justify-content: space-between;
@@ -91,11 +94,62 @@ block content
       background: rgba(255, 255, 255, 0.22);
       color: #fff;
     }
+    .facility-filter-wrap {
+      margin: 0 0 14px;
+    }
+    .facility-filter-title {
+      margin: 0 0 8px;
+      font-size: 0.92rem;
+      color: #334155;
+      font-weight: 700;
+    }
+    .facility-filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .facility-filter-btn {
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #0f172a;
+      border-radius: 999px;
+      padding: 5px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .facility-filter-btn.active {
+      background: #0f766e;
+      border-color: #0f766e;
+      color: #fff;
+    }
+    .facility-filter-count {
+      display: inline-block;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #0f172a;
+      min-width: 20px;
+      text-align: center;
+      padding: 1px 6px;
+      line-height: 1.4;
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+    .facility-filter-btn.active .facility-filter-count {
+      background: rgba(255, 255, 255, 0.22);
+      color: #fff;
+    }
     .waypoint-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
       gap: 14px;
       align-items: start;
+    }
+    .highlight-chip.visited {
+      background: #166534;
     }
     .waypoint-card {
       align-self: start;
@@ -255,12 +309,19 @@ block content
     p.type-filter-title Filter by waypoint type
     .type-filter-bar#typeFilterBar
 
+  .facility-filter-wrap
+    p.facility-filter-title Filter by facilities
+    .facility-filter-bar#facilityFilterBar
+
   if waypoints && waypoints.length
     .waypoint-grid
       each waypoint in waypoints
         .ship-card.waypoint-card.js-waypoint-card(
           class=waypoint.isCurrent ? "current" : ""
           data-waypoint-type=waypoint.type
+          data-has-marketplace=waypoint.hasMarketplace ? "1" : "0"
+          data-has-shipyard=waypoint.hasShipyard ? "1" : "0"
+          data-is-visited=waypoint.isVisited ? "1" : "0"
         )
           .waypoint-top
             h2= waypoint.symbol
@@ -283,12 +344,14 @@ block content
               strong Construction:
               |  #{waypoint.isUnderConstruction ? "Yes" : "No"}
 
-          if waypoint.highlights && waypoint.highlights.length
-            .highlights
+          .highlights
+            if waypoint.highlights && waypoint.highlights.length
               each item in waypoint.highlights
-                span.highlight-chip= item
-          else
-            .highlights
+                if item === "Visited"
+                  span.highlight-chip.visited= item
+                else
+                  span.highlight-chip= item
+            else
               span.highlight-chip No major facilities
 
           .traits-row
@@ -327,11 +390,11 @@ block content
                 |  0
 
           .actions-row
-            a(href=`/systems/${selectedSystem}/waypoints/${waypoint.symbol}`) Waypoint JSON
+            a(href=`/systems/${selectedSystem}/waypoints/${waypoint.symbol}/view`) Waypoint Details
             if waypoint.hasMarketplace
               a(href=`/systems/${selectedSystem}/waypoints/${waypoint.symbol}/market/view`) Market
             if waypoint.hasShipyard
-              a(href=`/systems/${selectedSystem}/waypoints/${waypoint.symbol}/shipyard`) Shipyard JSON
+              a(href=`/systems/${selectedSystem}/waypoints/${waypoint.symbol}/shipyard/view`) Shipyard
             if waypoint.isJumpGate
               a(href=`/systems/${selectedSystem}/waypoints/${waypoint.symbol}/jump-gate/view`) Jump Gate
             if waypoint.isUnderConstruction
@@ -359,7 +422,8 @@ block content
     (() => {
       const cards = Array.from(document.querySelectorAll(".js-waypoint-card[data-waypoint-type]"));
       const bar = document.getElementById("typeFilterBar");
-      if (!bar || cards.length === 0) return;
+      const facilityBar = document.getElementById("facilityFilterBar");
+      if (!bar || !facilityBar || cards.length === 0) return;
 
       const counts = cards.reduce((acc, card) => {
         const type = card.getAttribute("data-waypoint-type") || "UNKNOWN";
@@ -372,20 +436,73 @@ block content
         sortedTypes.map((type) => ({ type, count: counts[type] }))
       );
 
-      const setActiveFilter = (selectedType) => {
+      const facilityFilters = [
+        {
+          key: "ALL",
+          label: "All",
+          count: cards.length,
+        },
+        {
+          key: "MARKETPLACE",
+          label: "Marketplace",
+          count: cards.filter((card) => card.getAttribute("data-has-marketplace") === "1").length,
+        },
+        {
+          key: "SHIPYARD",
+          label: "Shipyard",
+          count: cards.filter((card) => card.getAttribute("data-has-shipyard") === "1").length,
+        },
+        {
+          key: "VISITED",
+          label: "Visited",
+          count: cards.filter((card) => card.getAttribute("data-is-visited") === "1").length,
+        },
+      ];
+
+      let activeTypeFilter = "ALL";
+      let activeFacilityFilter = "ALL";
+
+      const matchesFacilityFilter = (card, facilityFilter) => {
+        if (facilityFilter === "ALL") {
+          return true;
+        }
+        if (facilityFilter === "MARKETPLACE") {
+          return card.getAttribute("data-has-marketplace") === "1";
+        }
+        if (facilityFilter === "SHIPYARD") {
+          return card.getAttribute("data-has-shipyard") === "1";
+        }
+        if (facilityFilter === "VISITED") {
+          return card.getAttribute("data-is-visited") === "1";
+        }
+        return true;
+      };
+
+      const applyFilters = () => {
         cards.forEach((card) => {
           const cardType = card.getAttribute("data-waypoint-type");
-          const show = selectedType === "ALL" || cardType === selectedType;
-          card.style.display = show ? "block" : "none";
+          const matchesType = activeTypeFilter === "ALL" || cardType === activeTypeFilter;
+          const matchesFacility = matchesFacilityFilter(card, activeFacilityFilter);
+          card.style.display = matchesType && matchesFacility ? "block" : "none";
         });
 
         Array.from(bar.querySelectorAll(".type-filter-btn")).forEach((button) => {
-          if (button.getAttribute("data-filter-type") === selectedType) {
-            button.classList.add("active");
-          } else {
-            button.classList.remove("active");
-          }
+          button.classList.toggle("active", button.getAttribute("data-filter-type") === activeTypeFilter);
         });
+
+        Array.from(facilityBar.querySelectorAll(".facility-filter-btn")).forEach((button) => {
+          button.classList.toggle("active", button.getAttribute("data-filter-facility") === activeFacilityFilter);
+        });
+      };
+
+      const setActiveFilter = (selectedType) => {
+        activeTypeFilter = selectedType;
+        applyFilters();
+      };
+
+      const setActiveFacilityFilter = (selectedFacility) => {
+        activeFacilityFilter = selectedFacility;
+        applyFilters();
       };
 
       filters.forEach((filter) => {
@@ -407,7 +524,27 @@ block content
         bar.appendChild(button);
       });
 
+      facilityFilters.forEach((filter) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "facility-filter-btn";
+        button.setAttribute("data-filter-facility", filter.key);
+
+        const label = document.createElement("span");
+        label.textContent = filter.label;
+
+        const count = document.createElement("span");
+        count.className = "facility-filter-count";
+        count.textContent = String(filter.count);
+
+        button.appendChild(label);
+        button.appendChild(count);
+        button.addEventListener("click", () => setActiveFacilityFilter(filter.key));
+        facilityBar.appendChild(button);
+      });
+
       setActiveFilter("ALL");
+      setActiveFacilityFilter("ALL");
     })();
 
   script.

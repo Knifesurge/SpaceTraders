@@ -1,0 +1,158 @@
+extends layout
+
+block content
+  style.
+    .transaction-page {
+      max-width: 1080px;
+      margin: 0 auto;
+      display: grid;
+      gap: 14px;
+    }
+    .summary-grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+    .summary-card {
+      background: #fff;
+      border: 1px solid #dbe3ec;
+      border-radius: 10px;
+      padding: 12px;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+    }
+    .summary-label {
+      margin: 0 0 6px;
+      color: #475569;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .summary-value {
+      margin: 0;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .summary-value.neg {
+      color: #b91c1c;
+    }
+    .summary-value.pos {
+      color: #166534;
+    }
+    .table-wrap {
+      background: #fff;
+      border: 1px solid #dbe3ec;
+      border-radius: 10px;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+      overflow: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 940px;
+    }
+    th,
+    td {
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 10px;
+      font-size: 0.88rem;
+      vertical-align: top;
+    }
+    th {
+      background: #f8fafc;
+      color: #0f172a;
+      font-weight: 800;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .delta {
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .delta.neg {
+      color: #b91c1c;
+    }
+    .delta.pos {
+      color: #166534;
+    }
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.8rem;
+    }
+    .empty {
+      margin: 0;
+      color: #475569;
+      font-size: 0.95rem;
+    }
+
+  .transaction-page
+    - const txList = Array.isArray(transactions) ? transactions : []
+    - const txSummary = transactionSummary || {}
+    - const totalEntries = txList.length
+    - const totalSpent = Number(txSummary.totalSpent || 0)
+    - const totalEarned = Number(txSummary.totalEarned || 0)
+    - const spentCount = Number(txSummary.spentCount || 0)
+    - const earnedCount = Number(txSummary.earnedCount || 0)
+
+    h1 Transaction Log
+    p Track credit-impacting actions for this agent across contracts, fleet purchases, market sells, refuels, and more.
+
+    .summary-grid
+      .summary-card
+        p.summary-label Total Entries
+        p.summary-value= totalEntries
+      .summary-card
+        p.summary-label Total Spent
+        p.summary-value.neg= "-" + totalSpent.toLocaleString() + " credits"
+      .summary-card
+        p.summary-label Total Earned
+        p.summary-value.pos= "+" + totalEarned.toLocaleString() + " credits"
+      .summary-card
+        p.summary-label Spent Transactions
+        p.summary-value= spentCount.toLocaleString()
+      .summary-card
+        p.summary-label Earned Transactions
+        p.summary-value= earnedCount.toLocaleString()
+
+    if txList.length === 0
+      p.empty No transactions have been recorded yet.
+    else
+      .table-wrap
+        table
+          thead
+            tr
+              th Time
+              th Action
+              th Delta
+              th Credits
+              th Ship
+              th Waypoint
+              th Endpoint
+              th Details
+          tbody
+            each entry in txList
+              - const delta = Number(entry.creditsDelta || 0)
+              - const before = Number(entry.creditsBefore || 0)
+              - const after = Number(entry.creditsAfter || 0)
+              - const hasDetails = entry.details && Object.keys(entry.details).length > 0
+              - const detailsText = hasDetails ? JSON.stringify(entry.details) : "-"
+              - const deltaSign = delta > 0 ? "+" : ""
+              - const deltaDisplay = deltaSign + delta.toLocaleString()
+              - const creditsDisplay = before.toLocaleString() + " -> " + after.toLocaleString()
+              tr
+                td= new Date(entry.occurredAt).toLocaleString()
+                td= entry.action || "UNKNOWN"
+                if delta < 0
+                  td.delta.neg= deltaDisplay
+                else if delta > 0
+                  td.delta.pos= deltaDisplay
+                else
+                  td.delta= deltaDisplay
+                td= creditsDisplay
+                td.mono= entry.shipSymbol || "-"
+                td.mono= entry.waypointSymbol || "-"
+                td.mono= entry.endpoint || "-"
+                td.mono= detailsText

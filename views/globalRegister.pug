@@ -1,0 +1,447 @@
+extends layout
+
+block content
+  style.
+    .register-wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      display: grid;
+      gap: 14px;
+    }
+    .register-card {
+      background: #ffffff;
+      border: 1px solid #dbe3ec;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+    }
+    .register-card h1 {
+      margin: 0 0 8px;
+      font-size: 1.65rem;
+    }
+    .register-sub {
+      margin: 0;
+      color: #475569;
+      line-height: 1.45;
+      font-size: 0.94rem;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .field-row {
+      min-width: 0;
+    }
+    .field-row.full {
+      grid-column: 1 / -1;
+    }
+    .field-row label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 700;
+      font-size: 0.92rem;
+      color: #0f172a;
+    }
+    .field-row input {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      padding: 10px;
+      font-size: 0.95rem;
+      background: #fff;
+    }
+    .field-note {
+      margin: 4px 0 0;
+      color: #64748b;
+      font-size: 0.84rem;
+    }
+    .faction-pick-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .faction-chip {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 5px 10px;
+      background: #0f766e;
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+    .faction-chip.empty {
+      background: #64748b;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .actions button,
+    .actions a {
+      border: 0;
+      border-radius: 7px;
+      padding: 10px 14px;
+      background: #0f766e;
+      color: #fff;
+      text-decoration: none;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .actions .secondary {
+      background: #475569;
+    }
+    .notice {
+      border-left: 4px solid #f59e0b;
+      background: #fffbeb;
+      color: #92400e;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-top: 12px;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.58);
+      display: none;
+      z-index: 40;
+      padding: 18px;
+      overflow-y: auto;
+    }
+    .modal-overlay.open {
+      display: block;
+    }
+    .modal-window {
+      width: min(1200px, calc(100vw - 36px));
+      margin: 10px auto;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      box-shadow: 0 22px 48px rgba(15, 23, 42, 0.28);
+      overflow: hidden;
+    }
+    .modal-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      background: #0f172a;
+      color: #fff;
+    }
+    .modal-top h2 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+    .modal-top p {
+      margin: 2px 0 0;
+      font-size: 0.84rem;
+      color: #cbd5e1;
+    }
+    .modal-close {
+      border: 0;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-weight: 700;
+      cursor: pointer;
+      background: #334155;
+      color: #fff;
+    }
+    .faction-sections {
+      padding: 12px;
+      display: grid;
+      gap: 12px;
+    }
+    .faction-section {
+      background: #fff;
+      border: 1px solid #dbe3ec;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .faction-section-title {
+      margin: 0;
+      width: 100%;
+      background: #e2e8f0;
+      color: #0f172a;
+      font-size: 0.86rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 10px 12px;
+      border-bottom: 1px solid #cbd5e1;
+    }
+    .faction-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 10px;
+      padding: 10px;
+    }
+    .faction-card {
+      border: 1px solid #dbe3ec;
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 10px;
+      text-align: left;
+      cursor: pointer;
+    }
+    .faction-card:hover {
+      border-color: #0f766e;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+    }
+    .faction-card.active {
+      border-color: #0f766e;
+      box-shadow: inset 0 0 0 1px #0f766e;
+      background: #ecfeff;
+    }
+    .faction-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .faction-name {
+      margin: 0;
+      font-size: 0.98rem;
+      color: #0f172a;
+    }
+    .faction-symbol {
+      font-size: 0.78rem;
+      color: #64748b;
+      font-weight: 700;
+    }
+    .faction-meta {
+      margin: 0 0 6px;
+      font-size: 0.82rem;
+      color: #334155;
+    }
+    .recruiting-chip {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      background: #fef3c7;
+      color: #92400e;
+      margin-left: 6px;
+    }
+    .faction-desc {
+      margin: 0;
+      font-size: 0.84rem;
+      color: #334155;
+      line-height: 1.38;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .trait-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .trait-chip {
+      background: #111827;
+      color: #fff;
+      border-radius: 999px;
+      padding: 2px 7px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    @media (max-width: 760px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+      .modal-overlay {
+        padding: 10px;
+      }
+      .modal-window {
+        width: calc(100vw - 20px);
+      }
+    }
+
+  .register-wrap
+    .register-card
+      h1 Register New Agent
+      p.register-sub
+        | Server reset detected. Register a fresh agent and choose a faction. Your token will be updated automatically and caches will be cleared.
+
+      if !hasAccountToken
+        .notice
+          | No account token is configured on the server. Add ACCOUNT_TOKEN to data/.env before submitting registration.
+
+      form(action="/global/register/view" method="post")
+        .form-grid
+          .field-row
+            label(for="symbol") Agent Symbol
+            input(
+              id="symbol"
+              name="symbol"
+              required
+              maxlength="14"
+              minlength="3"
+              pattern="[A-Za-z0-9_-]+"
+              value=formSymbol || ""
+              placeholder="e.g. KNIFESURGE"
+            )
+            p.field-note 3-14 chars, letters/numbers/underscore/hyphen.
+
+          .field-row.full
+            label Faction
+            input(type="hidden" id="factionInput" name="faction" required value=selectedFaction || "")
+            .faction-pick-row
+              button#openFactionModal.secondary(type="button") Choose Faction
+              span.faction-chip#selectedFactionChip(class=(selectedFaction ? "" : "empty"))= selectedFaction || "No faction selected"
+            p.field-note Select from the in-app faction browser window.
+
+          .field-row.full
+            .actions
+              button(type="submit" disabled=!hasAccountToken) Register Agent
+              a.secondary(href="/") Back Home
+
+  .modal-overlay#factionModal(aria-hidden="true")
+    .modal-window
+      .modal-top
+        div
+          h2 Choose Faction
+          p Click a faction card to select it for registration.
+        button.modal-close#closeFactionModal(type="button") Close
+
+      .faction-sections
+        .faction-section
+          p.faction-section-title Main Factions
+          .faction-grid
+            each faction in mainFactions
+              button.faction-card.js-faction-card(
+                type="button"
+                data-faction-symbol=faction.symbol
+                data-faction-name=faction.name
+              )
+                .faction-top
+                  h3.faction-name= faction.name
+                  span.faction-symbol= faction.symbol
+                p.faction-meta
+                  | HQ: #{faction.headquarters}
+                  if faction.isRecruiting
+                    span.recruiting-chip Recruiting
+                p.faction-desc= faction.description
+                if faction.traits && faction.traits.length
+                  .trait-row
+                    each traitName in faction.traits.slice(0, 4)
+                      span.trait-chip= traitName
+
+        .faction-section
+          p.faction-section-title Independent Factions
+          .faction-grid
+            each faction in independentFactions
+              button.faction-card.js-faction-card(
+                type="button"
+                data-faction-symbol=faction.symbol
+                data-faction-name=faction.name
+              )
+                .faction-top
+                  h3.faction-name= faction.name
+                  span.faction-symbol= faction.symbol
+                p.faction-meta
+                  | HQ: #{faction.headquarters}
+                  if faction.isRecruiting
+                    span.recruiting-chip Recruiting
+                p.faction-desc= faction.description
+                if faction.traits && faction.traits.length
+                  .trait-row
+                    each traitName in faction.traits.slice(0, 4)
+                      span.trait-chip= traitName
+
+        .faction-section
+          p.faction-section-title Strange Factions
+          .faction-grid
+            each faction in strangeFactions
+              button.faction-card.js-faction-card(
+                type="button"
+                data-faction-symbol=faction.symbol
+                data-faction-name=faction.name
+              )
+                .faction-top
+                  h3.faction-name= faction.name
+                  span.faction-symbol= faction.symbol
+                p.faction-meta
+                  | HQ: #{faction.headquarters}
+                  if faction.isRecruiting
+                    span.recruiting-chip Recruiting
+                p.faction-desc= faction.description
+                if faction.traits && faction.traits.length
+                  .trait-row
+                    each traitName in faction.traits.slice(0, 4)
+                      span.trait-chip= traitName
+
+  script.
+    (() => {
+      const selectedFaction = !{JSON.stringify(selectedFaction || "")};
+      const modal = document.getElementById("factionModal");
+      const openBtn = document.getElementById("openFactionModal");
+      const closeBtn = document.getElementById("closeFactionModal");
+      const hiddenInput = document.getElementById("factionInput");
+      const selectedChip = document.getElementById("selectedFactionChip");
+      const cards = Array.from(document.querySelectorAll(".js-faction-card[data-faction-symbol]"));
+
+      if (!modal || !openBtn || !closeBtn || !hiddenInput || !selectedChip) return;
+
+      const setActiveCard = (symbol) => {
+        cards.forEach((card) => {
+          if (card.getAttribute("data-faction-symbol") === symbol) {
+            card.classList.add("active");
+          } else {
+            card.classList.remove("active");
+          }
+        });
+      };
+
+      const setSelectedFaction = (symbol) => {
+        hiddenInput.value = symbol;
+        selectedChip.textContent = symbol || "No faction selected";
+        if (symbol) {
+          selectedChip.classList.remove("empty");
+        } else {
+          selectedChip.classList.add("empty");
+        }
+        setActiveCard(symbol);
+      };
+
+      const openModal = () => {
+        modal.classList.add("open");
+        modal.setAttribute("aria-hidden", "false");
+      };
+
+      const closeModal = () => {
+        modal.classList.remove("open");
+        modal.setAttribute("aria-hidden", "true");
+      };
+
+      openBtn.addEventListener("click", openModal);
+      closeBtn.addEventListener("click", closeModal);
+      modal.addEventListener("click", (event) => {
+        if (event.target === modal) {
+          closeModal();
+        }
+      });
+
+      cards.forEach((card) => {
+        card.addEventListener("click", () => {
+          const symbol = card.getAttribute("data-faction-symbol") || "";
+          setSelectedFaction(symbol);
+          closeModal();
+        });
+      });
+
+      setSelectedFaction(selectedFaction);
+    })();

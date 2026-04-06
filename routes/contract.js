@@ -50,6 +50,11 @@ router.get("/:contractId/view", cors(corsOptions), asyncHandler(async (req, res)
   });
 }));
 
+router.post("/:contractId/accept/view", cors(corsOptions), asyncHandler(async (req, res) => {
+  await contractsApi.acceptContract(req.params.contractId);
+  res.redirect(`/contracts/${req.params.contractId}/view`);
+}));
+
 router.post("/:contractId/accept", cors(corsOptions), asyncHandler(async (req, res) => {
   const response = await contractsApi.acceptContract(req.params.contractId);
   sendSuccess(req, res, { data: response.data });

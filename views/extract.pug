@@ -1,30 +1,215 @@
-//- extract.pug
-doctype html 
-html 
-head 
-    title Extract Resource 
-body 
-    h1 Extracted Resources 
-    br
-    p Ship Symbol:  
-    a(href=`/fleet/my/ships/${shipSymbol}/`) #{shipSymbol}
+extends layout
+
+block content
+    style.
+        .extract-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .extract-title {
+            margin: 0;
+            font-size: 1.85rem;
+            line-height: 1.1;
+        }
+        .extract-sub {
+            margin: 5px 0 0;
+            color: #475569;
+            font-size: 0.94rem;
+        }
+        .extract-links {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .extract-links a {
+            text-decoration: none;
+            background: #475569;
+            color: #fff;
+            border-radius: 7px;
+            padding: 8px 11px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+        .extract-links a.primary {
+            background: #0f766e;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .stat-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+        .stat-label {
+            margin: 0;
+            color: #64748b;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            font-weight: 700;
+        }
+        .stat-value {
+            margin: 4px 0 0;
+            color: #0f172a;
+            font-size: 1.12rem;
+            font-weight: 700;
+        }
+        .cooldown-active {
+            color: #b45309;
+        }
+        .cooldown-ready {
+            color: #15803d;
+        }
+        .result-list {
+            margin: 0;
+            padding-left: 18px;
+            display: grid;
+            gap: 6px;
+        }
+        .result-list li {
+            color: #334155;
+            font-size: 0.92rem;
+            line-height: 1.4;
+        }
+        .event-grid {
+            margin-top: 6px;
+            display: grid;
+            gap: 7px;
+        }
+        .event-row {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px 10px;
+        }
+        .event-row p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #334155;
+        }
+        .action-row {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .action-row button {
+            border: 0;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-weight: 700;
+            background: #111827;
+            color: #fff;
+            font-size: 0.88rem;
+        }
+
+    - const payload = data || {}
+    - const extractData = payload.extraction || {}
+    - const extractYield = extractData.yield || {}
+    - const cooldownFromExtract = payload.cooldown && payload.cooldown.remainingSeconds
+    - const cooldownFromOnlyCooldown = payload.remainingSeconds
+    - const initialCooldownSeconds = Number(cooldownFromExtract || cooldownFromOnlyCooldown || 0)
+    - const events = payload.events || []
+
+    .extract-header
+        div
+            h1.extract-title Resource Extraction
+            p.extract-sub Ship #{shipSymbol} extraction status and cooldown telemetry.
+        .extract-links
+            a.primary(href=`/fleet/my/ships/${shipSymbol}`) Ship Detail
+            a(href="/fleet/my/ships") Back to Fleet
+
+    .stats-grid
+        .stat-card
+            p.stat-label Ship
+            p.stat-value= shipSymbol
+        .stat-card
+            p.stat-label Extract Result
+            if extract
+                p.stat-value Success
+            else
+                p.stat-value Cooldown Active
+        .stat-card
+            p.stat-label Cooldown
+            p.stat-value(id="extractCooldown" class=initialCooldownSeconds > 0 ? "cooldown-active" : "cooldown-ready")
+                if initialCooldownSeconds > 0
+                    | #{initialCooldownSeconds}s
+                else
+                    | Ready
+
     if extract
-        p Ship Remaining Cooldown: #{data.cooldown.remainingSeconds}
-        h3 Extracted Resources 
-        hr
-        ul 
-        li #{data.extraction.yield.units} x #{data.extraction.yield.symbol}
-        hr
-        h3 Events 
-        hr
-        ul
-        for key, value in data.events 
-            li #{key}: #{value}
-    else 
-        p Ship Cooldown: #{data.remainingSeconds}
-        p No resources extracted.
-    a(href="/fleet/my/ships") Go back to Ship Status
-    form(action=`/fleet/my/ships/${shipSymbol}/extract`, method="post")
-        input(type="hidden", name="shipSymbol", value=shipSymbol)
-        input(type="hidden", name="data", value=data)
-        button(type="submit") Extract Again
+        .ship-card
+            h2.section-title Extraction Yield
+            if extractYield.units && extractYield.symbol
+                ul.result-list
+                    li #{extractYield.units} x #{extractYield.symbol}
+            else
+                p No yield returned in response.
+
+        .ship-card
+            h2.section-title Events
+            if events.length
+                .event-grid
+                    each event, idx in events
+                        .event-row
+                            p
+                                strong Event #{idx + 1}:
+                                |  #{JSON.stringify(event)}
+            else
+                p No events returned.
+    else
+        .ship-card
+            h2.section-title Extraction Blocked
+            p Ship is still on cooldown. Use the timer above and retry when it reaches ready state.
+
+    .ship-card
+        h2.section-title Actions
+        form(action=`/fleet/my/ships/${shipSymbol}/extract`, method="post")
+            input(type="hidden", name="shipSymbol", value=shipSymbol)
+            .action-row
+                button(type="submit") Extract Again
+
+    script.
+        (() => {
+            const cooldownEl = document.getElementById("extractCooldown");
+            let remainingSeconds = Number(!{JSON.stringify(initialCooldownSeconds)}) || 0;
+
+            const renderCooldown = () => {
+                if (!cooldownEl) {
+                    return;
+                }
+
+                if (remainingSeconds <= 0) {
+                    cooldownEl.textContent = "Ready";
+                    cooldownEl.classList.remove("cooldown-active");
+                    cooldownEl.classList.add("cooldown-ready");
+                    return;
+                }
+
+                cooldownEl.textContent = `${remainingSeconds}s`;
+                cooldownEl.classList.remove("cooldown-ready");
+                cooldownEl.classList.add("cooldown-active");
+            };
+
+            renderCooldown();
+
+            if (remainingSeconds > 0) {
+                const timer = setInterval(() => {
+                    remainingSeconds -= 1;
+                    renderCooldown();
+                    if (remainingSeconds <= 0) {
+                        clearInterval(timer);
+                    }
+                }, 1000);
+            }
+        })();

@@ -1,19 +1,603 @@
 extends layout
 
 block content
-  h1 Market
-  p Waypoint: #{waypointSymbol}
-  p System: #{systemSymbol}
-  h2 Trade Goods
-  if data.tradeGoods && data.tradeGoods.length
-    each good in data.tradeGoods
-      .ship-card
-        p Symbol: #{good.symbol}
-        p Type: #{good.type}
-        p Supply: #{good.supply}
-        p Buy: #{good.purchasePrice}
-        p Sell: #{good.sellPrice}
-  else
-    p No trade goods available.
-  h2 Raw Response
-  pre= JSON.stringify(data, null, 2)
+  style.
+    .market-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .market-title {
+      margin: 0;
+      font-size: 1.8rem;
+      line-height: 1.1;
+    }
+    .market-sub {
+      margin: 5px 0 0;
+      color: #475569;
+      font-size: 0.94rem;
+    }
+    .market-links {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .market-links a {
+      text-decoration: none;
+      background: #475569;
+      color: #fff;
+      border-radius: 7px;
+      padding: 8px 11px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .stat-card {
+      background: #fff;
+      border: 1px solid #dbe3ec;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .stat-label {
+      margin: 0;
+      color: #64748b;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-weight: 700;
+    }
+    .stat-value {
+      margin: 5px 0 0;
+      color: #0f172a;
+      font-size: 1.06rem;
+      font-weight: 700;
+    }
+    .section-title {
+      margin: 0 0 8px;
+      font-size: 1.03rem;
+    }
+    .goods-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+      align-items: start;
+    }
+    .good-card {
+      border: 1px solid #dbe3ec;
+      border-left: 4px solid #94a3b8;
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px;
+    }
+    .good-card h3 {
+      margin: 0 0 7px;
+      font-size: 0.98rem;
+    }
+    .good-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px 10px;
+    }
+    .good-meta p {
+      margin: 0;
+      font-size: 0.86rem;
+      color: #334155;
+    }
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .chip {
+      border-radius: 999px;
+      background: #111827;
+      color: #fff;
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 3px 8px;
+    }
+    .table-wrap {
+      overflow-x: auto;
+    }
+    .market-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .market-table th,
+    .market-table td {
+      padding: 8px 9px;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
+      vertical-align: top;
+      white-space: nowrap;
+    }
+    .market-table th {
+      color: #475569;
+      font-size: 0.8rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .market-source-note {
+      margin: 0 0 12px;
+      font-size: 0.86rem;
+      color: #334155;
+      background: #f8fafc;
+      border: 1px solid #dbe3ec;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .sell-result {
+      border-left: 4px solid #16a34a;
+      background: #f0fdf4;
+      color: #166534;
+      border-radius: 8px;
+      padding: 9px 10px;
+      margin-bottom: 12px;
+      font-size: 0.9rem;
+    }
+    .sell-result.error {
+      border-left-color: #dc2626;
+      background: #fef2f2;
+      color: #991b1b;
+    }
+    .sell-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 12px;
+      align-items: start;
+    }
+    .sell-ship-card {
+      border: 1px solid #dbe3ec;
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px;
+    }
+    .sell-ship-card h3 {
+      margin: 0 0 6px;
+      font-size: 1rem;
+    }
+    .sell-ship-meta {
+      margin: 0 0 8px;
+      color: #475569;
+      font-size: 0.85rem;
+    }
+    .sell-cargo-row {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px;
+      margin-bottom: 8px;
+      background: #f8fafc;
+    }
+    .sell-cargo-row:last-child {
+      margin-bottom: 0;
+    }
+    .sell-cargo-row p {
+      margin: 0 0 6px;
+      font-size: 0.88rem;
+      color: #334155;
+    }
+    .sell-controls {
+      display: grid;
+      gap: 8px;
+    }
+    .sell-slider {
+      width: 100%;
+    }
+    .sell-input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .sell-input-row label {
+      font-weight: 700;
+      font-size: 0.84rem;
+      color: #334155;
+    }
+    .sell-input-row input[type="number"] {
+      width: 96px;
+      padding: 7px 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    .sell-controls button {
+      border: 0;
+      border-radius: 6px;
+      padding: 8px 11px;
+      font-weight: 700;
+      cursor: pointer;
+      background: #111827;
+      color: #fff;
+      width: fit-content;
+    }
+    .sell-estimate {
+      margin: 0;
+      color: #0f172a;
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+    .goods-filter-wrap {
+      margin: 0 0 10px;
+    }
+    .goods-filter-title {
+      margin: 0 0 6px;
+      font-size: 0.86rem;
+      color: #334155;
+      font-weight: 700;
+    }
+    .goods-filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .goods-filter-btn {
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #0f172a;
+      border-radius: 999px;
+      padding: 5px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .goods-filter-btn.active {
+      background: #0f766e;
+      border-color: #0f766e;
+      color: #fff;
+    }
+    .goods-filter-count {
+      display: inline-block;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #0f172a;
+      min-width: 20px;
+      text-align: center;
+      padding: 1px 6px;
+      line-height: 1.4;
+      font-size: 0.74rem;
+      font-weight: 700;
+    }
+    .goods-filter-btn.active .goods-filter-count {
+      background: rgba(255, 255, 255, 0.22);
+      color: #fff;
+    }
+
+  - const market = data || {}
+  - const exportsList = market.exports || []
+  - const importsList = market.imports || []
+  - const exchangeList = market.exchange || []
+  - const goods = market.tradeGoods || []
+  - const transactions = market.transactions || []
+  - const sellShips = sellableCargoByShip || []
+  - const sale = sellResult || null
+  - const liveData = !!hasLiveMarketData
+  - const cachedData = !!hasCachedMarketData
+  - const marketUpdatedAtMs = Number(marketLastUpdatedAt || 0)
+  - const ageMs = marketUpdatedAtMs > 0 ? Math.max(Date.now() - marketUpdatedAtMs, 0) : null
+  - const ageMinutes = ageMs === null ? null : Math.floor(ageMs / 60000)
+  - const ageHours = ageMs === null ? null : Math.floor(ageMs / 3600000)
+  - let marketUpdatedLabel = "unknown"
+  if ageMs !== null
+    if ageMinutes < 1
+      - marketUpdatedLabel = "just now"
+    else if ageMinutes < 60
+      - marketUpdatedLabel = `${ageMinutes} min${ageMinutes === 1 ? "" : "s"} ago`
+    else
+      - marketUpdatedLabel = `${ageHours} hour${ageHours === 1 ? "" : "s"} ago`
+
+  .market-header
+    div
+      h1.market-title Market #{waypointSymbol}
+      p.market-sub System #{systemSymbol}
+    .market-links
+      a(href=`/systems/${systemSymbol}/waypoints/${waypointSymbol}/view`) Back to Waypoint
+      a(href=`/systems/${systemSymbol}/waypoints/${waypointSymbol}/market`) JSON
+
+  .stats-grid
+    .stat-card
+      p.stat-label Exports
+      p.stat-value= exportsList.length
+    .stat-card
+      p.stat-label Imports
+      p.stat-value= importsList.length
+    .stat-card
+      p.stat-label Exchange Goods
+      p.stat-value= exchangeList.length
+    .stat-card
+      p.stat-label Live Trade Goods
+      p.stat-value= goods.length
+
+  .market-source-note
+    if liveData
+      | Live market data loaded.
+      if cachedData
+        |  Known goods cache merged for broader coverage.
+    else if cachedData
+      | Showing known cached market goods (no live market data available right now).
+    else
+      | No live or cached market data is currently available.
+
+  if sale
+    if sale.ok
+      .sell-result
+        | Sold #{Number(sale.units || 0).toLocaleString()} units of #{sale.tradeSymbol} from #{sale.shipSymbol} for #{Number(sale.totalPrice || 0).toLocaleString()} credits.
+        if sale.credits
+          |  Current credits: #{Number(sale.credits).toLocaleString()}.
+    else
+      .sell-result.error= sale.message || "Sell request failed."
+
+  .ship-card
+    h2.section-title Sell Cargo (Docked Ships At This Market)
+    if sellShips.length
+      .sell-grid
+        each shipEntry, i in sellShips
+          .sell-ship-card
+            h3= shipEntry.shipSymbol
+            p.sell-ship-meta Cargo #{Number(shipEntry.cargoUnits || 0).toLocaleString()} / #{Number(shipEntry.cargoCapacity || 0).toLocaleString()}
+
+            each cargoItem, j in shipEntry.sellableCargo
+              - const controlId = `sell-${i}-${j}`
+              .sell-cargo-row
+                p
+                  strong #{cargoItem.symbol}
+                  |  (#{cargoItem.name})
+                p
+                  | Available: #{Number(cargoItem.units || 0).toLocaleString()} | Unit Sell Price: #{Number(cargoItem.sellPrice || 0).toLocaleString()} | Market Supply: #{cargoItem.marketSupply}
+                form.js-sell-form(action=`/systems/${systemSymbol}/waypoints/${waypointSymbol}/market/sell`, method="post" data-unit-price=cargoItem.sellPrice)
+                  input(type="hidden", name="shipSymbol", value=shipEntry.shipSymbol)
+                  input(type="hidden", name="tradeSymbol", value=cargoItem.symbol)
+                  input(type="hidden", name="units", value=1 data-units-hidden)
+                  .sell-controls
+                    input.sell-slider(
+                      id=`${controlId}-slider`
+                      type="range"
+                      min="1"
+                      max=cargoItem.units
+                      value="1"
+                      step="1"
+                      data-sell-slider
+                    )
+                    .sell-input-row
+                      label(for=`${controlId}-input`) Units to sell
+                      input(
+                        id=`${controlId}-input`
+                        type="number"
+                        min="1"
+                        max=cargoItem.units
+                        value="1"
+                        step="1"
+                        data-sell-input
+                      )
+                    p.sell-estimate(data-sell-estimate) Estimated total: #{Number(cargoItem.sellPrice || 0).toLocaleString()}
+                    button(type="submit") Sell Cargo
+    else
+      p No sellable cargo available here. Ships must be docked at this market waypoint with cargo symbols this market will buy.
+
+  .ship-card
+    h2.section-title Known Trade Goods (last updated: #{marketUpdatedLabel})
+    if goods.length
+      .goods-filter-wrap
+        p.goods-filter-title Filter by kind
+        .goods-filter-bar#goodsKindFilterBar
+      .goods-filter-wrap
+        p.goods-filter-title Filter by supply level
+        .goods-filter-bar#goodsSupplyFilterBar
+      .goods-filter-wrap
+        p.goods-filter-title Filter by activity
+        .goods-filter-bar#goodsActivityFilterBar
+    if goods.length
+      .goods-grid
+        each good in goods
+          .good-card.js-good-card(
+            data-good-kind=(good.type || "UNKNOWN")
+            data-good-supply=(good.supply || "UNKNOWN")
+            data-good-activity=(good.activity || "NONE")
+          )
+            h3= good.symbol
+            .chip-row
+              span.chip= good.type
+              span.chip Supply #{good.supply}
+              if good.activity
+                span.chip Activity #{good.activity}
+            .good-meta
+              p
+                strong Purchase:
+                |  #{Number(good.purchasePrice || 0).toLocaleString()}
+              p
+                strong Sell:
+                |  #{Number(good.sellPrice || 0).toLocaleString()}
+              p
+                strong Trade Volume:
+                |  #{Number(good.tradeVolume || 0).toLocaleString()}
+              p
+                strong Base Supply:
+                |  #{Number(good.units || 0).toLocaleString()}
+    else
+      p No live trade goods available (you may need a ship present at this market).
+
+  .ship-card
+    h2.section-title Recent Transactions
+    if transactions.length
+      .table-wrap
+        table.market-table
+          thead
+            tr
+              th Time
+              th Type
+              th Ship
+              th Trade Good
+              th Units
+              th Unit Price
+              th Total
+          tbody
+            each tx in transactions
+              tr
+                td= tx.timestamp
+                td= tx.type
+                td= tx.shipSymbol
+                td= tx.tradeSymbol
+                td= Number(tx.units || 0).toLocaleString()
+                td= Number(tx.pricePerUnit || 0).toLocaleString()
+                td= Number(tx.totalPrice || 0).toLocaleString()
+    else
+      p No recent transactions are visible at this market.
+
+  script.
+    (() => {
+      const forms = document.querySelectorAll(".js-sell-form");
+      const clampUnits = (value, min, max) => {
+        const parsed = Number.parseInt(String(value || ""), 10);
+        if (!Number.isFinite(parsed)) return min;
+        return Math.min(max, Math.max(min, parsed));
+      };
+
+      for (const form of forms) {
+        const slider = form.querySelector("[data-sell-slider]");
+        const input = form.querySelector("[data-sell-input]");
+        const hidden = form.querySelector("[data-units-hidden]");
+        const estimate = form.querySelector("[data-sell-estimate]");
+        if (!slider || !input || !hidden) {
+          continue;
+        }
+
+        const min = Number.parseInt(String(slider.min || "1"), 10) || 1;
+        const max = Number.parseInt(String(slider.max || "1"), 10) || 1;
+        const unitPrice = Number.parseInt(String(form.getAttribute("data-unit-price") || "0"), 10) || 0;
+
+        const sync = (nextValue) => {
+          const safeUnits = clampUnits(nextValue, min, max);
+          slider.value = String(safeUnits);
+          input.value = String(safeUnits);
+          hidden.value = String(safeUnits);
+          if (estimate) {
+            const total = safeUnits * unitPrice;
+            estimate.textContent = `Estimated total: ${total.toLocaleString()}`;
+          }
+        };
+
+        slider.addEventListener("input", () => sync(slider.value));
+        input.addEventListener("input", () => sync(input.value));
+        input.addEventListener("change", () => sync(input.value));
+
+        sync(input.value || slider.value || "1");
+      }
+    })();
+
+  script.
+    (() => {
+      const cards = Array.from(document.querySelectorAll(".js-good-card"));
+      const kindBar = document.getElementById("goodsKindFilterBar");
+      const supplyBar = document.getElementById("goodsSupplyFilterBar");
+      const activityBar = document.getElementById("goodsActivityFilterBar");
+
+      if (!cards.length || !kindBar || !supplyBar || !activityBar) {
+        return;
+      }
+
+      const buildCounts = (attributeName) => cards.reduce((acc, card) => {
+        const value = String(card.getAttribute(attributeName) || "UNKNOWN").toUpperCase();
+        acc[value] = (acc[value] || 0) + 1;
+        return acc;
+      }, {});
+
+      const toFilterList = (counts, allLabel = "ALL") => {
+        const keys = Object.keys(counts).sort((a, b) => a.localeCompare(b));
+        return [{ key: allLabel, label: allLabel, count: cards.length }]
+          .concat(keys.map((key) => ({ key, label: key, count: counts[key] })));
+      };
+
+      const kindFilters = toFilterList(buildCounts("data-good-kind"));
+      const supplyFilters = toFilterList(buildCounts("data-good-supply"));
+      const activityFilters = toFilterList(buildCounts("data-good-activity"));
+
+      let activeKind = "ALL";
+      let activeSupply = "ALL";
+      let activeActivity = "ALL";
+
+      const matchesFilter = (cardValue, activeValue) => (
+        activeValue === "ALL" || String(cardValue || "").toUpperCase() === activeValue
+      );
+
+      const updateButtons = (bar, attrName, activeValue) => {
+        Array.from(bar.querySelectorAll(".goods-filter-btn")).forEach((button) => {
+          const value = button.getAttribute(attrName) || "";
+          button.classList.toggle("active", value === activeValue);
+        });
+      };
+
+      const applyFilters = () => {
+        cards.forEach((card) => {
+          const kind = card.getAttribute("data-good-kind");
+          const supply = card.getAttribute("data-good-supply");
+          const activity = card.getAttribute("data-good-activity");
+
+          const visible = (
+            matchesFilter(kind, activeKind)
+            && matchesFilter(supply, activeSupply)
+            && matchesFilter(activity, activeActivity)
+          );
+
+          card.style.display = visible ? "block" : "none";
+        });
+
+        updateButtons(kindBar, "data-kind-filter", activeKind);
+        updateButtons(supplyBar, "data-supply-filter", activeSupply);
+        updateButtons(activityBar, "data-activity-filter", activeActivity);
+      };
+
+      const createButton = (filter, attrName, clickHandler) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "goods-filter-btn";
+        button.setAttribute(attrName, filter.key);
+
+        const label = document.createElement("span");
+        label.textContent = filter.label;
+
+        const count = document.createElement("span");
+        count.className = "goods-filter-count";
+        count.textContent = String(filter.count);
+
+        button.appendChild(label);
+        button.appendChild(count);
+        button.addEventListener("click", () => clickHandler(filter.key));
+        return button;
+      };
+
+      kindFilters.forEach((filter) => {
+        kindBar.appendChild(createButton(filter, "data-kind-filter", (value) => {
+          activeKind = value;
+          applyFilters();
+        }));
+      });
+
+      supplyFilters.forEach((filter) => {
+        supplyBar.appendChild(createButton(filter, "data-supply-filter", (value) => {
+          activeSupply = value;
+          applyFilters();
+        }));
+      });
+
+      activityFilters.forEach((filter) => {
+        activityBar.appendChild(createButton(filter, "data-activity-filter", (value) => {
+          activeActivity = value;
+          applyFilters();
+        }));
+      });
+
+      applyFilters();
+    })();

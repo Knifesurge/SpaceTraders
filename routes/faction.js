@@ -1,12 +1,16 @@
 import express from "express";
 import cors from "cors";
 
-import { FactionsApi } from "spacetraders-sdk";
+import { Configuration, FactionsApi } from "spacetraders-sdk";
 
 import config from "../data/config.js";
 import { asyncHandler, sendSuccess } from "./http.js";
 
-const factionsApi = new FactionsApi(config);
+const publicConfig = new Configuration({
+  basePath: config.basePath,
+});
+
+const factionsApi = new FactionsApi(publicConfig);
 
 const router = express.Router();
 const corsOptions = {

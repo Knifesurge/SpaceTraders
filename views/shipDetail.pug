@@ -35,8 +35,42 @@ block content
       font-weight: 700;
       display: inline-block;
     }
+    .detail-links form {
+      margin: 0;
+    }
+    .detail-links form.hidden-post {
+      display: none;
+    }
+    .detail-links button {
+      border: 0;
+      text-decoration: none;
+      background: #0f766e;
+      color: #fff;
+      border-radius: 6px;
+      padding: 7px 11px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      display: inline-block;
+      cursor: pointer;
+    }
     .detail-links a.secondary {
       background: #475569;
+    }
+    .detail-links a.disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    .detail-links button.secondary {
+      background: #475569;
+    }
+    .meta-grid a {
+      color: #0f766e;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .meta-grid a:hover {
+      text-decoration: underline;
     }
     .status-chip {
       display: inline-flex;
@@ -201,11 +235,14 @@ block content
       }
     }
 
-  - const normalizedStatus = (ship?.nav?.status || "").toLowerCase().replace("_", "-")
-  - const fuelCurrent = Number(ship?.fuel?.current || 0)
-  - const fuelCapacity = Number(ship?.fuel?.capacity || 0)
-  - const cargoUnits = Number(ship?.cargo?.units || 0)
-  - const cargoCapacity = Number(ship?.cargo?.capacity || 0)
+  - const normalizedStatus = ((ship && ship.nav && ship.nav.status) || "").toLowerCase().replace("_", "-")
+  - const fuelCurrent = Number((ship && ship.fuel && ship.fuel.current) || 0)
+  - const fuelCapacity = Number((ship && ship.fuel && ship.fuel.capacity) || 0)
+  - const cargoUnits = Number((ship && ship.cargo && ship.cargo.units) || 0)
+  - const cargoCapacity = Number((ship && ship.cargo && ship.cargo.capacity) || 0)
+  - const displayRole = (shipDisplay && shipDisplay.role) || "UNKNOWN"
+  - const displayType = (shipDisplay && shipDisplay.type) || (ship && ship.frame && ship.frame.symbol) || "UNKNOWN"
+  - const extractCooldownSeconds = Number((ship && ship.cooldown && ship.cooldown.remainingSeconds) || 0)
   - const fuelPercent = fuelCapacity > 0 ? Math.round((fuelCurrent / fuelCapacity) * 100) : 0
   - const cargoPercent = cargoCapacity > 0 ? Math.round((cargoUnits / cargoCapacity) * 100) : 0
 
@@ -215,14 +252,31 @@ block content
       p.detail-sub Full systems, route, and cargo operations for this vessel.
     .detail-links
       a(href="/fleet/my/ships") Back to Fleet
-      a.secondary(href="/fleet/my/ships/navigate") Navigate
-      a.secondary(href="#cargo") Cargo Hold
+      a.secondary(href=`/fleet/my/ships/navigate?shipSymbol=${ship.symbol}`) Navigate
+      if canExtractResources
+        a.secondary.js-extract-post(
+          href="#"
+          data-form-id="extract-post-form"
+          data-cooldown=extractCooldownSeconds
+          data-base-label="Extract Resources"
+          class=extractCooldownSeconds > 0 ? "disabled" : ""
+          aria-disabled=extractCooldownSeconds > 0 ? "true" : "false"
+        )
+          if extractCooldownSeconds > 0
+            | Extract Resources (#{extractCooldownSeconds}s)
+          else
+            | Extract Resources
+        form#extract-post-form.hidden-post(action=`/fleet/my/ships/${ship.symbol}/extract`, method="post")
+          input(type="hidden", name="shipSymbol", value=ship.symbol)
 
   .stats-grid
     .stat-card
       p.stat-label Status
       p.stat-value
         span(class=`status-chip ${normalizedStatus}`)= ship.nav.status
+    .stat-card
+      p.stat-label Role
+      p.stat-value= displayRole
     .stat-card
       p.stat-label Flight Mode
       p.stat-value= ship.nav.flightMode
@@ -238,13 +292,21 @@ block content
     .meta-grid
       p
         strong System:
-        |  #{ship.nav.systemSymbol}
+        | 
+        a(href=`/systems/${ship.nav.systemSymbol}/view`)= ship.nav.systemSymbol
       p
         strong Waypoint:
-        |  #{ship.nav.waypointSymbol}
+        | 
+        a(href=`/systems/${ship.nav.systemSymbol}/waypoints/${ship.nav.waypointSymbol}/view`)= ship.nav.waypointSymbol
+      p
+        strong Type:
+        |  #{displayType}
       p
         strong Frame:
         |  #{ship.frame.symbol}
+      p
+        strong Role:
+        |  #{displayRole}
       p
         strong Reactor:
         |  #{ship.reactor.symbol}
@@ -326,3 +388,54 @@ block content
               button(type="submit") Jettison
     else
       p Cargo hold is empty.
+
+  script.
+    (() => {
+      const extractLinks = document.querySelectorAll(".js-extract-post[data-form-id]");
+      for (const link of extractLinks) {
+        const baseLabel = String(link.getAttribute("data-base-label") || "Extract Resources");
+        let remainingSeconds = Number(link.getAttribute("data-cooldown") || 0);
+        if (Number.isNaN(remainingSeconds) || remainingSeconds < 0) {
+          remainingSeconds = 0;
+        }
+
+        const renderExtractState = () => {
+          const onCooldown = remainingSeconds > 0;
+          link.classList.toggle("disabled", onCooldown);
+          link.setAttribute("aria-disabled", onCooldown ? "true" : "false");
+          link.textContent = onCooldown
+            ? `${baseLabel} (${remainingSeconds}s)`
+            : baseLabel;
+        };
+
+        renderExtractState();
+
+        if (remainingSeconds > 0) {
+          const timer = setInterval(() => {
+            remainingSeconds -= 1;
+            renderExtractState();
+
+            if (remainingSeconds <= 0) {
+              clearInterval(timer);
+            }
+          }, 1000);
+        }
+
+        link.addEventListener("click", (event) => {
+          event.preventDefault();
+          if (remainingSeconds > 0) {
+            return;
+          }
+
+          const formId = link.getAttribute("data-form-id");
+          if (!formId) {
+            return;
+          }
+
+          const form = document.getElementById(formId);
+          if (form) {
+            form.submit();
+          }
+        });
+      }
+    })();

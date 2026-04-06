@@ -65,10 +65,65 @@ html
                 color: #ffffff;
             }
 
+            .topbar-spacer {
+                flex: 1 1 auto;
+            }
+
+            .topbar-stat {
+                color: #e2e8f0;
+                font-size: 0.84rem;
+                font-weight: 700;
+                padding: 4px 8px;
+                border-radius: 999px;
+                background: rgba(148, 163, 184, 0.2);
+                border: 1px solid rgba(148, 163, 184, 0.3);
+                white-space: nowrap;
+            }
+
             .container {
                 max-width: 1200px;
                 margin: 0 auto;
                 padding: 20px;
+            }
+
+            .global-banner-wrap {
+                max-width: 1200px;
+                margin: 12px auto 0;
+                padding: 0 20px;
+            }
+
+            .global-banner {
+                border-radius: 10px;
+                padding: 10px 12px;
+                border: 1px solid #f59e0b;
+                background: #fffbeb;
+                color: #92400e;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 10px;
+                flex-wrap: wrap;
+                font-size: 0.9rem;
+                box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+            }
+
+            .global-banner.danger {
+                border-color: #ef4444;
+                background: #fef2f2;
+                color: #991b1b;
+            }
+
+            .global-banner a {
+                text-decoration: none;
+                font-weight: 700;
+                color: inherit;
+                border: 1px solid currentColor;
+                border-radius: 999px;
+                padding: 4px 9px;
+            }
+
+            .global-banner a:hover {
+                background: rgba(255, 255, 255, 0.55);
             }
 
             .ship-card {
@@ -80,6 +135,31 @@ html
                 box-shadow: 0 10px 26px rgba(15, 23, 42, 0.07);
             }
 
+            .app-toast {
+                position: fixed;
+                left: 50%;
+                bottom: 22px;
+                transform: translateX(-50%);
+                z-index: 40;
+                min-width: min(540px, calc(100vw - 28px));
+                max-width: min(640px, calc(100vw - 28px));
+                padding: 12px 14px;
+                border-radius: 12px;
+                background: rgba(15, 23, 42, 0.94);
+                color: #f8fafc;
+                border: 1px solid rgba(148, 163, 184, 0.24);
+                box-shadow: 0 18px 40px rgba(15, 23, 42, 0.28);
+                font-size: 0.92rem;
+                font-weight: 700;
+                opacity: 1;
+                transition: opacity 0.45s ease, transform 0.45s ease;
+            }
+
+            .app-toast.fade-out {
+                opacity: 0;
+                transform: translateX(-50%) translateY(10px);
+            }
+
             button {
                 margin-top: 5px;
             }
@@ -87,6 +167,9 @@ html
             @media (max-width: 680px) {
                 .container {
                     padding: 14px;
+                }
+                .global-banner-wrap {
+                    padding: 0 14px;
                 }
                 .topbar {
                     padding: 10px 12px;
@@ -97,6 +180,33 @@ html
         //- Top Navigation Bar
         include topbar.pug
 
+        if globalBanner
+            .global-banner-wrap
+                .global-banner(class=globalBanner.level === "danger" ? "danger" : "warning")
+                    span= globalBanner.message
+                    if globalBanner.ctaHref && globalBanner.ctaLabel
+                        a(href=globalBanner.ctaHref)= globalBanner.ctaLabel
+
         //- Page-specific content inserted here
         .container
             block content
+
+        if appToast && appToast.message
+            .app-toast#appToast= appToast.message
+
+        if appToast && appToast.message
+            script.
+                (() => {
+                    const toast = document.getElementById("appToast");
+                    if (!toast) {
+                        return;
+                    }
+
+                    window.setTimeout(() => {
+                        toast.classList.add("fade-out");
+                    }, 2600);
+
+                    window.setTimeout(() => {
+                        toast.remove();
+                    }, 3200);
+                })();

@@ -6,10 +6,15 @@ export const sendJson = (res, payload, status = 200) => {
   res.status(status).type("json").send(JSON.stringify(payload, null, 2));
 };
 
+const wantsJsonResponse = (req) => {
+  const jsonFlag = String(req?.query?.json || "").trim().toLowerCase();
+  return ["1", "true", "yes", "on"].includes(jsonFlag);
+};
+
 export const sendSuccess = (req, res, options = {}) => {
   const { data, view, locals = {}, status = 200 } = options;
 
-  if (view) {
+  if (view && !wantsJsonResponse(req)) {
     const viewLocals = {
       ...locals,
     };
@@ -23,7 +28,11 @@ export const sendSuccess = (req, res, options = {}) => {
     });
   }
 
-  return sendJson(res, data, status);
+  if (data !== undefined) {
+    return sendJson(res, data, status);
+  }
+
+  return sendJson(res, locals, status);
 };
 
 export const getErrorStatus = (error) => {

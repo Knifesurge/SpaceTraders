@@ -1,0 +1,192 @@
+extends layout
+
+block content
+  style.
+    .system-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .system-title {
+      margin: 0;
+      font-size: 1.8rem;
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+    .system-sub {
+      margin: 5px 0 0;
+      color: #475569;
+      font-size: 0.94rem;
+    }
+    .system-links {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .system-links a {
+      text-decoration: none;
+      background: #475569;
+      color: #fff;
+      border-radius: 7px;
+      padding: 8px 11px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .badge-chip {
+      border-radius: 999px;
+      background: #111827;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      display: inline-block;
+    }
+    .badge-chip.type {
+      background: #0f766e;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px 12px;
+    }
+    .meta-grid p {
+      margin: 0;
+      font-size: 0.92rem;
+    }
+    .section-title {
+      margin: 0 0 8px;
+      font-size: 1.02rem;
+    }
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+    .faction-chip {
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #0f172a;
+      padding: 4px 9px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+    .waypoint-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 10px;
+      align-items: start;
+    }
+    .waypoint-card {
+      border: 1px solid #dbe3ec;
+      border-left: 4px solid #94a3b8;
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px;
+      align-self: start;
+    }
+    .waypoint-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+    .waypoint-top a {
+      color: #0f766e;
+      text-decoration: none;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+    .waypoint-top a:hover {
+      text-decoration: underline;
+    }
+    .waypoint-type {
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #0f172a;
+      padding: 2px 8px;
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+    .waypoint-meta {
+      margin: 0;
+      color: #334155;
+      font-size: 0.86rem;
+      line-height: 1.35;
+    }
+
+  - const system = data || {}
+  - const waypoints = system.waypoints || []
+  - const factions = system.factions || []
+
+  .system-header
+    div
+      h1.system-title System #{system.symbol || "Unknown"}
+      p.system-sub Sector #{system.sectorSymbol || "Unknown"}
+      .badge-row
+        span.badge-chip.type= system.type || "UNKNOWN"
+        if system.constellation
+          span.badge-chip Constellation #{system.constellation}
+        if system.name
+          span.badge-chip #{system.name}
+    .system-links
+      a(href="/systems/current/view") Back to Current Systems
+      if system.symbol
+        a(href=`/systems/${system.symbol}`) JSON
+
+  .ship-card
+    h2.section-title Overview
+    .meta-grid
+      p
+        strong Symbol:
+        |  #{system.symbol || "Unknown"}
+      p
+        strong Sector:
+        |  #{system.sectorSymbol || "Unknown"}
+      p
+        strong Type:
+        |  #{system.type || "Unknown"}
+      p
+        strong Coordinates:
+        |  (#{system.x}, #{system.y})
+      p
+        strong Waypoints:
+        |  #{waypoints.length}
+      p
+        strong Factions:
+        |  #{factions.length}
+
+  .ship-card
+    h2.section-title Factions
+    if factions.length
+      .chip-list
+        each faction in factions
+          span.faction-chip= faction.symbol
+    else
+      p No faction data listed for this system.
+
+  .ship-card
+    h2.section-title Waypoints
+    if waypoints.length
+      .waypoint-grid
+        each waypoint in waypoints
+          .waypoint-card
+            .waypoint-top
+              a(href=`/systems/${system.symbol}/waypoints/${waypoint.symbol}/view`)= waypoint.symbol
+              span.waypoint-type= waypoint.type
+            p.waypoint-meta Coordinates: (#{waypoint.x}, #{waypoint.y})
+            p.waypoint-meta Orbitals: #{(waypoint.orbitals || []).length}
+            p.waypoint-meta
+              | Orbits: #{waypoint.orbits || "None"}
+    else
+      p No waypoint data listed for this system.

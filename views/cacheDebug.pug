@@ -1,0 +1,115 @@
+extends layout
+
+block content
+  style.
+    .cache-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .cache-title {
+      margin: 0;
+      font-size: 1.8rem;
+      line-height: 1.1;
+    }
+    .cache-sub {
+      margin: 5px 0 0;
+      color: #475569;
+      font-size: 0.94rem;
+    }
+    .cache-links {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .cache-links a {
+      text-decoration: none;
+      background: #475569;
+      color: #fff;
+      border-radius: 7px;
+      padding: 8px 11px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .stat-card {
+      background: #fff;
+      border: 1px solid #dbe3ec;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .stat-label {
+      margin: 0;
+      color: #64748b;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-weight: 700;
+    }
+    .stat-value {
+      margin: 5px 0 0;
+      color: #0f172a;
+      font-size: 1.06rem;
+      font-weight: 700;
+    }
+    .section-title {
+      margin: 0 0 8px;
+      font-size: 1.03rem;
+    }
+    .json-block {
+      margin: 0;
+      padding: 12px;
+      border-radius: 8px;
+      background: #0f172a;
+      color: #e2e8f0;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+  - const summary = cacheSummary || {}
+  - const payload = cacheData || {}
+
+  .cache-header
+    div
+      h1.cache-title Cache Debug
+      p.cache-sub Persisted knowledge caches currently stored on disk for this app.
+    .cache-links
+      a(href="/") Back to Home
+      a(href="/global/status/view") Global Status
+
+  .stats-grid
+    .stat-card
+      p.stat-label Market Entries
+      p.stat-value= Number(summary.marketEntries || 0).toLocaleString()
+    .stat-card
+      p.stat-label Visited Agents
+      p.stat-value= Number(summary.visitedAgents || 0).toLocaleString()
+    .stat-card
+      p.stat-label Visited Waypoints
+      p.stat-value= Number(summary.visitedWaypoints || 0).toLocaleString()
+    .stat-card
+      p.stat-label Ship Metadata Entries
+      p.stat-value= Number(summary.shipMetadataEntries || 0).toLocaleString()
+
+  .ship-card
+    h2.section-title Market Cache
+    pre.json-block= JSON.stringify(payload.marketCache || [], null, 2)
+
+  .ship-card
+    h2.section-title Visited Waypoints Cache
+    pre.json-block= JSON.stringify(payload.visitedWaypoints || {}, null, 2)
+
+  .ship-card
+    h2.section-title Ship Metadata Cache
+    pre.json-block= JSON.stringify(payload.shipMetadata || [], null, 2)

@@ -1,26 +1,116 @@
-//- response.pug
-doctype html
-html
-  head
-    title Response Data
-  body
-    h1 Response Data
+extends layout
 
-    // Recursive function to display nested key-values with indentation
-    mixin displayData(data, level = 0)
-      each value, key in data
-        if typeof value == 'object'
-          p(style=`margin-left: ${level * 20}px`)
-          strong #{key}:
-          ul
-          li
-            +displayData(value, level + 1)
+block content
+  style.
+    .response-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .response-title {
+      margin: 0;
+      font-size: 1.75rem;
+      line-height: 1.1;
+    }
+    .response-sub {
+      margin: 5px 0 0;
+      color: #475569;
+      font-size: 0.94rem;
+    }
+    .response-links {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .response-links a {
+      text-decoration: none;
+      background: #475569;
+      color: #fff;
+      border-radius: 7px;
+      padding: 8px 11px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .tree-root {
+      margin: 0;
+      padding-left: 0;
+      list-style: none;
+    }
+    .tree-node {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .tree-row {
+      display: flex;
+      gap: 6px;
+      align-items: baseline;
+      flex-wrap: wrap;
+      margin: 4px 0;
+    }
+    .tree-key {
+      color: #334155;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .tree-value {
+      color: #0f172a;
+      font-size: 0.9rem;
+      word-break: break-word;
+    }
+    .tree-children {
+      margin: 3px 0 6px 14px;
+      padding-left: 12px;
+      border-left: 1px dashed #cbd5e1;
+      list-style: none;
+    }
+    .tree-empty {
+      color: #64748b;
+      font-style: italic;
+      font-size: 0.87rem;
+    }
+
+  mixin displayNode(value, label)
+    li.tree-node
+      .tree-row
+        if label !== null
+          span.tree-key #{label}:
+        if value === null
+          span.tree-value null
+        else if Array.isArray(value)
+          span.tree-value Array(#{value.length})
+        else if typeof value === "object"
+          span.tree-value Object
         else
-          p(style=`margin-left: ${level * 20}px`)
-          strong #{key}:
-          span #{value}
+          span.tree-value #{value}
 
-    // Call the mixin with the passed data
-    +displayData(data)
+      if value && typeof value === "object"
+        if Array.isArray(value)
+          if value.length
+            ul.tree-children
+              each item, index in value
+                +displayNode(item, `[${index}]`)
+          else
+            p.tree-empty []
+        else
+          - const objectKeys = Object.keys(value)
+          if objectKeys.length
+            ul.tree-children
+              each key in objectKeys
+                +displayNode(value[key], key)
+          else
+            p.tree-empty {}
 
-    a(href="/") Go back to form
+  .response-header
+    div
+      h1.response-title Response Data
+      p.response-sub Structured response output for this action.
+    .response-links
+      a(href="/") Home
+
+  .ship-card
+    ul.tree-root
+      +displayNode(data, null)

@@ -1,0 +1,228 @@
+extends layout
+
+block content
+  style.
+    .nav-result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .nav-result-title {
+      margin: 0;
+      font-size: 1.8rem;
+      line-height: 1.1;
+    }
+    .nav-result-sub {
+      margin: 5px 0 0;
+      color: #475569;
+      font-size: 0.94rem;
+    }
+    .nav-result-links {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .nav-result-links a {
+      text-decoration: none;
+      background: #475569;
+      color: #fff;
+      border-radius: 7px;
+      padding: 8px 11px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .nav-result-links a.primary {
+      background: #0f766e;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .stat-card {
+      background: #fff;
+      border: 1px solid #dbe3ec;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .stat-label {
+      margin: 0;
+      color: #64748b;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-weight: 700;
+    }
+    .stat-value {
+      margin: 5px 0 0;
+      color: #0f172a;
+      font-size: 1.08rem;
+      font-weight: 700;
+    }
+    .route-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .route-node {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px;
+      background: #f8fafc;
+    }
+    .route-node p {
+      margin: 0 0 4px;
+      font-size: 0.9rem;
+    }
+    .section-title {
+      margin: 0 0 8px;
+      font-size: 1.03rem;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px 12px;
+    }
+    .meta-grid p {
+      margin: 0;
+      font-size: 0.92rem;
+    }
+    .event-list {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 6px;
+    }
+    .event-list li {
+      color: #334155;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    .countdown-live {
+      color: #b45309;
+    }
+    @media (max-width: 800px) {
+      .route-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+  - const payload = data || {}
+  - const nav = payload.nav || {}
+  - const route = nav.route || {}
+  - const origin = route.origin || {}
+  - const destination = route.destination || {}
+  - const fuel = payload.fuel || {}
+  - const consumed = fuel.consumed || {}
+  - const events = payload.events || []
+
+  .nav-result-header
+    div
+      h1.nav-result-title Navigation Confirmed
+      p.nav-result-sub #{shipSymbol} is now committed to its new route.
+    .nav-result-links
+      a.primary(href=`/fleet/my/ships/${shipSymbol}`) Ship Detail
+      a(href="/fleet/my/ships") Fleet
+      a(href="/fleet/my/ships/navigate") Navigate Again
+      if destination.systemSymbol && destination.symbol
+        a(href=`/systems/${destination.systemSymbol}/waypoints/${destination.symbol}/view`) Destination
+
+  .stats-grid
+    .stat-card
+      p.stat-label Status
+      p.stat-value= nav.status || "UNKNOWN"
+    .stat-card
+      p.stat-label Flight Mode
+      p.stat-value= nav.flightMode || "UNKNOWN"
+    .stat-card
+      p.stat-label Fuel Remaining
+      p.stat-value #{Number(fuel.current || 0).toLocaleString()} / #{Number(fuel.capacity || 0).toLocaleString()}
+    .stat-card
+      p.stat-label Fuel Consumed
+      p.stat-value #{Number(consumed.amount || 0).toLocaleString()}
+    .stat-card
+      p.stat-label ETA
+      p.stat-value.countdown-live#navEta(data-arrival=route.arrival)= route.arrival || "Unknown"
+    .stat-card
+      p.stat-label Events
+      p.stat-value= Number(events.length || 0).toLocaleString()
+
+  .ship-card
+    h2.section-title Route Summary
+    .route-grid
+      .route-node
+        p
+          strong Origin
+        p #{origin.symbol || "Unknown"}
+        p #{origin.type || "Unknown"}
+        p System #{origin.systemSymbol || nav.systemSymbol || "Unknown"}
+      .route-node
+        p
+          strong Destination
+        p #{destination.symbol || requestedWaypointSymbol || "Unknown"}
+        p #{destination.type || "Unknown"}
+        p System #{destination.systemSymbol || nav.systemSymbol || "Unknown"}
+
+  .ship-card
+    h2.section-title Transit Details
+    .meta-grid
+      p
+        strong Departure Time:
+        |  #{route.departureTime || "Unknown"}
+      p
+        strong Arrival Time:
+        |  #{route.arrival || "Unknown"}
+      p
+        strong Current Waypoint:
+        |  #{nav.waypointSymbol || requestedWaypointSymbol || "Unknown"}
+      p
+        strong Requested Destination:
+        |  #{requestedWaypointSymbol || destination.symbol || "Unknown"}
+
+  .ship-card
+    h2.section-title Navigation Events
+    if events.length
+      ul.event-list
+        each event, index in events
+          li Event #{index + 1}: #{JSON.stringify(event)}
+    else
+      p No condition events were returned for this navigation action.
+
+  script.
+    (() => {
+      const etaEl = document.getElementById("navEta");
+      if (!etaEl) {
+        return;
+      }
+
+      const arrivalRaw = etaEl.getAttribute("data-arrival") || "";
+      const arrivalMs = Date.parse(arrivalRaw);
+      if (Number.isNaN(arrivalMs)) {
+        return;
+      }
+
+      const formatRemaining = (remainingMs) => {
+        const totalSeconds = Math.max(Math.floor(remainingMs / 1000), 0);
+        const hh = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+        const mm = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+        const ss = String(totalSeconds % 60).padStart(2, "0");
+        return `${hh}:${mm}:${ss}`;
+      };
+
+      const tick = () => {
+        const remaining = arrivalMs - Date.now();
+        etaEl.textContent = remaining <= 0 ? "Arrived" : formatRemaining(remaining);
+      };
+
+      tick();
+      const timer = setInterval(() => {
+        tick();
+        if ((arrivalMs - Date.now()) <= 0) {
+          clearInterval(timer);
+        }
+      }, 1000);
+    })();

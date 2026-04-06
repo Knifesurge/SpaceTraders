@@ -54,6 +54,19 @@ block content
       font-size: 0.85rem;
       color: #0f172a;
     }
+    .preselect-note {
+      margin: 6px 0 0;
+      font-size: 0.84rem;
+      color: #9a3412;
+      background: #fff7ed;
+      border: 1px solid #fdba74;
+      border-radius: 7px;
+      padding: 7px 9px;
+      display: none;
+    }
+    .preselect-note.visible {
+      display: block;
+    }
     .actions {
       display: flex;
       gap: 10px;
@@ -61,7 +74,6 @@ block content
       flex-wrap: wrap;
       margin-top: 6px;
     }
-    .actions button,
     .actions a {
       border: 0;
       background: #0f766e;
@@ -75,21 +87,182 @@ block content
     .actions a.secondary {
       background: #475569;
     }
+    .waypoint-overview {
+      margin-top: 18px;
+    }
+    .overview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .overview-title {
+      margin: 0;
+      font-size: 1.08rem;
+    }
+    .overview-sub {
+      margin: 4px 0 0;
+      color: #475569;
+      font-size: 0.88rem;
+    }
+    .overview-empty {
+      margin: 0;
+      color: #475569;
+      font-size: 0.9rem;
+    }
+    .overview-filter-wrap {
+      margin: 0 0 10px;
+    }
+    .overview-filter-title {
+      margin: 0 0 6px;
+      font-size: 0.86rem;
+      color: #334155;
+      font-weight: 700;
+    }
+    .overview-filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .overview-filter-btn {
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #0f172a;
+      border-radius: 999px;
+      padding: 5px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .overview-filter-btn.active {
+      background: #0f766e;
+      border-color: #0f766e;
+      color: #fff;
+    }
+    .overview-filter-count {
+      display: inline-block;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #0f172a;
+      min-width: 20px;
+      text-align: center;
+      padding: 1px 6px;
+      line-height: 1.4;
+      font-size: 0.74rem;
+      font-weight: 700;
+    }
+    .overview-filter-btn.active .overview-filter-count {
+      background: rgba(255, 255, 255, 0.22);
+      color: #fff;
+    }
+    .waypoint-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+      align-items: start;
+    }
+    .waypoint-card {
+      border: 1px solid #dbe3ec;
+      border-left: 4px solid #94a3b8;
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+    }
+    .waypoint-card.current {
+      border-left-color: #0f766e;
+    }
+    .waypoint-card.selected {
+      border-left-color: #16a34a;
+      box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.18), 0 12px 24px rgba(22, 163, 74, 0.18);
+    }
+    .waypoint-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .waypoint-top h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+    .waypoint-type {
+      font-size: 0.8rem;
+      color: #334155;
+      background: #e2e8f0;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+    .card-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 10px;
+      margin-bottom: 8px;
+    }
+    .card-meta p {
+      margin: 0;
+      font-size: 0.86rem;
+      color: #334155;
+    }
+    .poi-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 8px 0;
+    }
+    .poi-chip {
+      border-radius: 999px;
+      background: #111827;
+      color: #fff;
+      font-size: 0.73rem;
+      font-weight: 700;
+      padding: 3px 8px;
+    }
+    .card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .card-actions a {
+      border: 0;
+      border-radius: 6px;
+      padding: 7px 10px;
+      text-decoration: none;
+      background: #475569;
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .card-actions a.primary {
+      background: #0f766e;
+    }
 
   .nav-card
     h1 Ship Navigation
     p.nav-sub
       | Select a ship first, then choose a waypoint in that ship's current system.
 
-    form(action="/fleet/my/ships/navigate/submit" method="POST")
+    form#navigationForm(action="/fleet/my/ships/navigate/submit" method="POST")
       .form-grid
+        .field-row
+          label(for="systemSymbol") System
+          select(id="systemSymbol" name="systemSymbol")
+            option(value="" selected disabled) -- Select a system --
+
         .field-row
           label(for="shipSymbol") Ship
           select(id="shipSymbol" name="shipSymbol" required)
-            option(value="" selected disabled) -- Select a ship --
-            each ship in ships
-              option(value=ship.symbol data-system=ship.systemSymbol)
-                | #{ship.symbol} - #{ship.systemSymbol}
+            option(value="" selected disabled) -- Select a system first --
 
         .field-row
           label(for="waypointSymbol") Waypoint
@@ -97,19 +270,59 @@ block content
             option(value="" selected disabled) -- Select a ship first --
           p.system-note(id="systemNote") System: not selected
           p.eta-note Estimated ETA based on current ship speed and flight mode.
+          p.preselect-note(id="preselectNote")
 
         .actions
-          button(type="submit") Navigate Ship
+          a.primary#navigateSubmitLink(href="#") Navigate Ship
           a.secondary(href="/fleet/my/ships") Back to Fleet
+
+    .waypoint-overview
+      .overview-header
+        div
+          h2.overview-title Waypoint Overview
+          p.overview-sub All known waypoints in the selected ship's system, with ETA and points of interest.
+      .overview-filter-wrap
+        p.overview-filter-title Filter overview
+        .overview-filter-bar#overviewFilterBar
+      p.overview-empty#waypointOverviewEmpty Select a ship to load waypoints.
+      .waypoint-grid#waypointOverviewGrid
 
   script.
     (() => {
       const ships = !{JSON.stringify(ships || [])};
       const waypoints = !{JSON.stringify(waypoints || [])};
+      const preselectedShipSymbol = !{JSON.stringify((preselectedShipSymbol || "").trim().toUpperCase())};
+      const preselectedWaypointSymbol = !{JSON.stringify((preselectedWaypointSymbol || "").trim().toUpperCase())};
+      const preselectedSystemSymbol = !{JSON.stringify((preselectedSystemSymbol || "").trim().toUpperCase())};
+      let preferredWaypointSymbol = preselectedWaypointSymbol;
 
       const shipSelect = document.getElementById("shipSymbol");
+      const systemSelect = document.getElementById("systemSymbol");
       const waypointSelect = document.getElementById("waypointSymbol");
+      const navigationForm = document.getElementById("navigationForm");
+      const navigateSubmitLink = document.getElementById("navigateSubmitLink");
       const systemNote = document.getElementById("systemNote");
+      const preselectNote = document.getElementById("preselectNote");
+      const waypointOverviewGrid = document.getElementById("waypointOverviewGrid");
+      const waypointOverviewEmpty = document.getElementById("waypointOverviewEmpty");
+      const overviewFilterBar = document.getElementById("overviewFilterBar");
+      let activeOverviewFilter = "ALL";
+
+      if (navigateSubmitLink && navigationForm) {
+        navigateSubmitLink.addEventListener("click", (event) => {
+          event.preventDefault();
+          if (typeof navigationForm.reportValidity === "function" && !navigationForm.reportValidity()) {
+            return;
+          }
+
+          if (typeof navigationForm.requestSubmit === "function") {
+            navigationForm.requestSubmit();
+            return;
+          }
+
+          navigationForm.submit();
+        });
+      }
 
       const flightModeTimeMultiplier = {
         DRIFT: 2.5,
@@ -126,7 +339,346 @@ block content
         waypointCacheBySystem[system].push(waypoint);
       }
 
-      const setWaypointOptions = (systemSymbol) => {
+      const normalizeSymbol = (value) => String(value || "").trim().toUpperCase();
+      let preferredShipSymbol = preselectedShipSymbol;
+      const systems = [...new Set(ships.map((ship) => normalizeSymbol(ship.systemSymbol)).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b));
+
+      const getSelectedShip = () => {
+        const selectedSymbol = normalizeSymbol(shipSelect.value);
+        return ships.find((ship) => normalizeSymbol(ship.symbol) === selectedSymbol);
+      };
+
+      const populateSystemOptions = (selectedSystemSymbol = "") => {
+        systemSelect.innerHTML = "";
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "-- Select a system --";
+        placeholder.disabled = true;
+        placeholder.selected = !selectedSystemSymbol;
+        systemSelect.appendChild(placeholder);
+
+        for (const systemSymbol of systems) {
+          const option = document.createElement("option");
+          option.value = systemSymbol;
+          option.textContent = systemSymbol;
+          option.selected = Boolean(selectedSystemSymbol && systemSymbol === selectedSystemSymbol);
+          systemSelect.appendChild(option);
+        }
+      };
+
+      const populateShipOptions = (systemSymbol, selectedShipSymbol = "") => {
+        shipSelect.innerHTML = "";
+
+        if (!systemSymbol) {
+          shipSelect.disabled = true;
+          const placeholder = document.createElement("option");
+          placeholder.value = "";
+          placeholder.textContent = "-- Select a system first --";
+          placeholder.disabled = true;
+          placeholder.selected = true;
+          shipSelect.appendChild(placeholder);
+          return false;
+        }
+
+        const matchingShips = ships
+          .filter((ship) => normalizeSymbol(ship.systemSymbol) === systemSymbol)
+          .sort((a, b) => normalizeSymbol(a.symbol).localeCompare(normalizeSymbol(b.symbol)));
+
+        shipSelect.disabled = false;
+
+        let matchedSelection = false;
+        matchingShips.forEach((ship, index) => {
+          const option = document.createElement("option");
+          option.value = ship.symbol;
+          option.textContent = ship.symbol;
+          if (selectedShipSymbol && normalizeSymbol(ship.symbol) === selectedShipSymbol) {
+            option.selected = true;
+            matchedSelection = true;
+          } else if (!selectedShipSymbol && index === 0) {
+            option.selected = true;
+            matchedSelection = true;
+          }
+          shipSelect.appendChild(option);
+        });
+
+        return matchedSelection;
+      };
+
+      const estimateEtaSeconds = (fromWaypoint, toWaypoint, engineSpeed, flightMode) => {
+        if (!fromWaypoint || !toWaypoint) return null;
+        const dx = Number(toWaypoint.x) - Number(fromWaypoint.x);
+        const dy = Number(toWaypoint.y) - Number(fromWaypoint.y);
+        const distance = Math.sqrt((dx * dx) + (dy * dy));
+        if (distance === 0) return 0;
+        const timeMultiplier = flightModeTimeMultiplier[flightMode] || 1;
+        const baseSeconds = (distance / Math.max(1, Number(engineSpeed || 1))) * 60;
+        return Math.ceil(baseSeconds * timeMultiplier);
+      };
+
+      const formatEta = (seconds) => {
+        if (seconds === null || Number.isNaN(seconds)) return "ETA n/a";
+        if (seconds <= 0) return "ETA 00:00:00";
+        const hh = String(Math.floor(seconds / 3600)).padStart(2, "0");
+        const mm = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
+        const ss = String(seconds % 60).padStart(2, "0");
+        return `ETA ${hh}:${mm}:${ss}`;
+      };
+
+      const getWaypointHighlights = (waypoint) => {
+        const traits = Array.isArray(waypoint.traits) ? waypoint.traits : [];
+        const highlights = [];
+        if (waypoint.visited) highlights.push("Visited");
+        if (traits.includes("MARKETPLACE")) highlights.push("Marketplace");
+        if (traits.includes("SHIPYARD")) highlights.push("Shipyard");
+        if (traits.includes("FUEL_STATION")) highlights.push("Fuel Station");
+        if (traits.includes("UNCHARTED")) highlights.push("Uncharted");
+        if (String(waypoint.type || "").toUpperCase() === "JUMP_GATE") highlights.push("Jump Gate");
+        return highlights;
+      };
+
+      const applyOverviewFilter = (items) => {
+        if (activeOverviewFilter === "ALL") {
+          return items;
+        }
+
+        if (activeOverviewFilter === "POI_ONLY") {
+          return items.filter((item) => item.highlights.length > 0);
+        }
+
+        const filterLabels = {
+          VISITED: "Visited",
+          MARKETPLACE: "Marketplace",
+          SHIPYARD: "Shipyard",
+          FUEL_STATION: "Fuel Station",
+          JUMP_GATE: "Jump Gate",
+          UNCHARTED: "Uncharted",
+        };
+
+        const requiredHighlight = filterLabels[activeOverviewFilter];
+        if (!requiredHighlight) {
+          return items;
+        }
+
+        return items.filter((item) => item.highlights.includes(requiredHighlight));
+      };
+
+      const renderOverviewFilterBar = (items) => {
+        if (!overviewFilterBar) {
+          return;
+        }
+
+        const allCount = items.length;
+        const poiCount = items.filter((item) => item.highlights.length > 0).length;
+        const filters = [
+          { key: "ALL", label: "All", count: allCount },
+          { key: "POI_ONLY", label: "POI Only", count: poiCount },
+          {
+            key: "VISITED",
+            label: "Visited",
+            count: items.filter((item) => item.highlights.includes("Visited")).length,
+          },
+          {
+            key: "MARKETPLACE",
+            label: "Market",
+            count: items.filter((item) => item.highlights.includes("Marketplace")).length,
+          },
+          {
+            key: "SHIPYARD",
+            label: "Shipyard",
+            count: items.filter((item) => item.highlights.includes("Shipyard")).length,
+          },
+          {
+            key: "FUEL_STATION",
+            label: "Fuel",
+            count: items.filter((item) => item.highlights.includes("Fuel Station")).length,
+          },
+          {
+            key: "JUMP_GATE",
+            label: "Jump Gate",
+            count: items.filter((item) => item.highlights.includes("Jump Gate")).length,
+          },
+          {
+            key: "UNCHARTED",
+            label: "Uncharted",
+            count: items.filter((item) => item.highlights.includes("Uncharted")).length,
+          },
+        ];
+
+        overviewFilterBar.innerHTML = "";
+
+        for (const filter of filters) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `overview-filter-btn${filter.key === activeOverviewFilter ? " active" : ""}`;
+          button.setAttribute("data-overview-filter", filter.key);
+
+          const label = document.createElement("span");
+          label.textContent = filter.label;
+
+          const count = document.createElement("span");
+          count.className = "overview-filter-count";
+          count.textContent = String(filter.count);
+
+          button.appendChild(label);
+          button.appendChild(count);
+          button.addEventListener("click", () => {
+            activeOverviewFilter = filter.key;
+            const selectedShip = getSelectedShip();
+            renderWaypointOverview(selectedShip ? selectedShip.systemSymbol : "", preferredWaypointSymbol);
+          });
+          overviewFilterBar.appendChild(button);
+        }
+      };
+
+      const renderWaypointOverview = (systemSymbol, selectedWaypointSymbol = "") => {
+        waypointOverviewGrid.innerHTML = "";
+
+        if (!systemSymbol) {
+          renderOverviewFilterBar([]);
+          waypointOverviewEmpty.textContent = "Select a ship to load waypoints.";
+          return;
+        }
+
+        const selectedShip = getSelectedShip();
+        const availableWaypoints = waypointCacheBySystem[systemSymbol] || [];
+        if (!selectedShip || availableWaypoints.length === 0) {
+          renderOverviewFilterBar([]);
+          waypointOverviewEmpty.textContent = "No waypoint data is available for this system.";
+          return;
+        }
+
+        const currentShipWaypoint = availableWaypoints.find(
+          (waypoint) => waypoint.symbol === selectedShip.waypointSymbol
+        ) || null;
+        const engineSpeed = selectedShip.engineSpeed || 1;
+        const flightMode = selectedShip.flightMode || "CRUISE";
+
+        const sortedWaypoints = availableWaypoints
+          .map((waypoint) => {
+            const etaSeconds = estimateEtaSeconds(currentShipWaypoint, waypoint, engineSpeed, flightMode);
+            const highlights = getWaypointHighlights(waypoint);
+            return {
+              waypoint,
+              etaSeconds,
+              highlights,
+            };
+          })
+          .sort((a, b) => {
+            const aEta = a.etaSeconds;
+            const bEta = b.etaSeconds;
+            const aMissing = aEta === null || Number.isNaN(aEta);
+            const bMissing = bEta === null || Number.isNaN(bEta);
+
+            if (aMissing && bMissing) {
+              if (b.highlights.length !== a.highlights.length) {
+                return b.highlights.length - a.highlights.length;
+              }
+              return a.waypoint.symbol.localeCompare(b.waypoint.symbol);
+            }
+            if (aMissing) return 1;
+            if (bMissing) return -1;
+            if (aEta !== bEta) return aEta - bEta;
+            if (b.highlights.length !== a.highlights.length) {
+              return b.highlights.length - a.highlights.length;
+            }
+            return a.waypoint.symbol.localeCompare(b.waypoint.symbol);
+          });
+
+        renderOverviewFilterBar(sortedWaypoints);
+        const visibleWaypoints = applyOverviewFilter(sortedWaypoints)
+          .sort((a, b) => {
+            const aSelected = Boolean(selectedWaypointSymbol && a.waypoint.symbol === selectedWaypointSymbol);
+            const bSelected = Boolean(selectedWaypointSymbol && b.waypoint.symbol === selectedWaypointSymbol);
+            if (aSelected && !bSelected) return -1;
+            if (!aSelected && bSelected) return 1;
+            return 0;
+          });
+
+        waypointOverviewEmpty.textContent = `Showing ${visibleWaypoints.length} of ${sortedWaypoints.length} waypoints for ${systemSymbol}.`;
+
+        for (const item of visibleWaypoints) {
+          const { waypoint, etaSeconds, highlights } = item;
+          const card = document.createElement("div");
+          const isCurrent = waypoint.symbol === selectedShip.waypointSymbol;
+          const isSelected = selectedWaypointSymbol && waypoint.symbol === selectedWaypointSymbol;
+          card.className = `waypoint-card${isCurrent ? " current" : ""}${isSelected ? " selected" : ""}`;
+
+          const top = document.createElement("div");
+          top.className = "waypoint-top";
+
+          const heading = document.createElement("h2");
+          heading.textContent = waypoint.symbol;
+
+          const typeChip = document.createElement("span");
+          typeChip.className = "waypoint-type";
+          typeChip.textContent = waypoint.type || "UNKNOWN";
+
+          top.appendChild(heading);
+          top.appendChild(typeChip);
+          card.appendChild(top);
+
+          const meta = document.createElement("div");
+          meta.className = "card-meta";
+          meta.innerHTML = `
+            <p><strong>ETA:</strong> ${formatEta(etaSeconds)}</p>
+            <p><strong>Orbitals:</strong> ${Array.isArray(waypoint.orbitals) ? waypoint.orbitals.length : 0}</p>
+            <p><strong>Coordinates:</strong> (${waypoint.x}, ${waypoint.y})</p>
+            <p><strong>Status:</strong> ${isCurrent ? "Current location" : (isSelected ? "Selected destination" : "Available")}</p>
+          `;
+          card.appendChild(meta);
+
+          const poiRow = document.createElement("div");
+          poiRow.className = "poi-row";
+          const poiValues = highlights.length ? highlights : ["No major facilities"];
+          for (const value of poiValues) {
+            const chip = document.createElement("span");
+            chip.className = "poi-chip";
+            chip.textContent = value;
+            poiRow.appendChild(chip);
+          }
+          card.appendChild(poiRow);
+
+          const actions = document.createElement("div");
+          actions.className = "card-actions";
+
+          const selectLink = document.createElement("a");
+          selectLink.href = "#";
+          selectLink.className = "primary";
+          selectLink.textContent = isSelected ? "Selected" : "Select Waypoint";
+          selectLink.addEventListener("click", (event) => {
+            event.preventDefault();
+            preferredWaypointSymbol = isSelected ? "" : waypoint.symbol;
+            setWaypointOptions(systemSymbol, preferredWaypointSymbol);
+          });
+          actions.appendChild(selectLink);
+
+          const detailLink = document.createElement("a");
+          detailLink.href = `/systems/${systemSymbol}/waypoints/${waypoint.symbol}/view`;
+          detailLink.textContent = "Waypoint Details";
+          actions.appendChild(detailLink);
+
+          if (highlights.includes("Marketplace")) {
+            const marketLink = document.createElement("a");
+            marketLink.href = `/systems/${systemSymbol}/waypoints/${waypoint.symbol}/market/view`;
+            marketLink.textContent = "Market";
+            actions.appendChild(marketLink);
+          }
+
+          if (highlights.includes("Shipyard")) {
+            const shipyardLink = document.createElement("a");
+            shipyardLink.href = `/systems/${systemSymbol}/waypoints/${waypoint.symbol}/shipyard/view`;
+            shipyardLink.textContent = "Shipyard";
+            actions.appendChild(shipyardLink);
+          }
+
+          card.appendChild(actions);
+          waypointOverviewGrid.appendChild(card);
+        }
+      };
+
+      const setWaypointOptions = (systemSymbol, selectedWaypointSymbol = "") => {
         waypointSelect.innerHTML = "";
 
         if (!systemSymbol) {
@@ -138,41 +690,22 @@ block content
           placeholder.disabled = true;
           waypointSelect.appendChild(placeholder);
           systemNote.textContent = "System: not selected";
+          renderWaypointOverview("");
           return;
         }
 
-        const selectedShip = ships.find((ship) => ship.symbol === shipSelect.value);
+        const selectedShip = getSelectedShip();
         const currentShipWaypoint = selectedShip
           ? waypoints.find((waypoint) => waypoint.symbol === selectedShip.waypointSymbol)
           : null;
         const engineSpeed = selectedShip?.engineSpeed || 1;
         const flightMode = selectedShip?.flightMode || "CRUISE";
-        const timeMultiplier = flightModeTimeMultiplier[flightMode] || 1;
-
-        const estimateEtaSeconds = (fromWaypoint, toWaypoint) => {
-          if (!fromWaypoint || !toWaypoint) return null;
-          const dx = Number(toWaypoint.x) - Number(fromWaypoint.x);
-          const dy = Number(toWaypoint.y) - Number(fromWaypoint.y);
-          const distance = Math.sqrt((dx * dx) + (dy * dy));
-          if (distance === 0) return 0;
-          const baseSeconds = (distance / Math.max(1, Number(engineSpeed))) * 60;
-          return Math.ceil(baseSeconds * timeMultiplier);
-        };
-
-        const formatEta = (seconds) => {
-          if (seconds === null || Number.isNaN(seconds)) return "ETA n/a";
-          if (seconds <= 0) return "ETA 00:00:00";
-          const hh = String(Math.floor(seconds / 3600)).padStart(2, "0");
-          const mm = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
-          const ss = String(seconds % 60).padStart(2, "0");
-          return `ETA ${hh}:${mm}:${ss}`;
-        };
 
         const availableWaypoints = waypointCacheBySystem[systemSymbol] || [];
         const waypointsWithEta = availableWaypoints
           .map((waypoint) => ({
             waypoint,
-            etaSeconds: estimateEtaSeconds(currentShipWaypoint, waypoint),
+            etaSeconds: estimateEtaSeconds(currentShipWaypoint, waypoint, engineSpeed, flightMode),
           }))
           .sort((a, b) => {
             const aEta = a.etaSeconds;
@@ -190,30 +723,122 @@ block content
           });
         waypointSelect.disabled = false;
 
-        const placeholder = document.createElement("option");
-        placeholder.value = "";
-        placeholder.textContent = "-- Select a waypoint --";
-        placeholder.selected = true;
-        placeholder.disabled = true;
-        waypointSelect.appendChild(placeholder);
-
-        for (const item of waypointsWithEta) {
+        let matchedWaypoint = false;
+        let resolvedWaypointSymbol = "";
+        waypointsWithEta.forEach((item, index) => {
           const waypoint = item.waypoint;
           const option = document.createElement("option");
           option.value = waypoint.symbol;
           option.textContent = `${waypoint.symbol} (${waypoint.type}) - ${formatEta(item.etaSeconds)}`;
+          if (selectedWaypointSymbol && waypoint.symbol === selectedWaypointSymbol) {
+            option.selected = true;
+            matchedWaypoint = true;
+            resolvedWaypointSymbol = waypoint.symbol;
+          } else if (!selectedWaypointSymbol && index === 0) {
+            option.selected = true;
+            matchedWaypoint = true;
+            resolvedWaypointSymbol = waypoint.symbol;
+          }
           waypointSelect.appendChild(option);
+        });
+
+        if (!matchedWaypoint && waypointsWithEta.length > 0) {
+          waypointSelect.selectedIndex = 0;
+          resolvedWaypointSymbol = String(waypointSelect.value || "").trim().toUpperCase();
+        }
+
+        if (resolvedWaypointSymbol) {
+          preferredWaypointSymbol = resolvedWaypointSymbol;
         }
 
         const currentWaypointText = currentShipWaypoint ? currentShipWaypoint.symbol : "unknown";
         systemNote.textContent = `System: ${systemSymbol} | Current: ${currentWaypointText} | Mode: ${flightMode} | Waypoints: ${availableWaypoints.length}`;
+        renderWaypointOverview(systemSymbol, resolvedWaypointSymbol || selectedWaypointSymbol);
       };
 
       shipSelect.addEventListener("change", () => {
         const selectedShip = ships.find((ship) => ship.symbol === shipSelect.value);
-        setWaypointOptions(selectedShip ? selectedShip.systemSymbol : "");
+        preferredShipSymbol = normalizeSymbol(shipSelect.value);
+        const currentWaypointValue = String(waypointSelect.value || "").trim().toUpperCase();
+        if (currentWaypointValue) {
+          preferredWaypointSymbol = currentWaypointValue;
+        }
+        preselectNote.classList.remove("visible");
+        preselectNote.textContent = "";
+        setWaypointOptions(
+          selectedShip ? selectedShip.systemSymbol : "",
+          preferredWaypointSymbol
+        );
       });
 
+      systemSelect.addEventListener("change", () => {
+        const selectedSystem = normalizeSymbol(systemSelect.value);
+        const matchedShip = populateShipOptions(selectedSystem, preferredShipSymbol);
+        const selectedShip = matchedShip ? getSelectedShip() : null;
+
+        if (!matchedShip) {
+          preferredWaypointSymbol = preselectedWaypointSymbol;
+          waypointSelect.innerHTML = "";
+          const placeholder = document.createElement("option");
+          placeholder.value = "";
+          placeholder.textContent = "-- Select a ship first --";
+          placeholder.selected = true;
+          placeholder.disabled = true;
+          waypointSelect.appendChild(placeholder);
+          waypointSelect.disabled = true;
+          systemNote.textContent = `System: ${selectedSystem || "not selected"}`;
+          renderWaypointOverview("");
+          return;
+        }
+
+        setWaypointOptions(selectedShip ? selectedShip.systemSymbol : "", preferredWaypointSymbol);
+      });
+
+      waypointSelect.addEventListener("change", () => {
+        const selectedWaypoint = String(waypointSelect.value || "").trim().toUpperCase();
+        preferredWaypointSymbol = selectedWaypoint || preferredWaypointSymbol;
+        const selectedShip = getSelectedShip();
+        renderWaypointOverview(selectedShip ? selectedShip.systemSymbol : "", preferredWaypointSymbol);
+      });
+
+      const waypointForSelection = waypoints.find(
+        (waypoint) => normalizeSymbol(waypoint.symbol) === preselectedWaypointSymbol
+      );
+      const preselectedShip = ships.find((ship) => normalizeSymbol(ship.symbol) === preselectedShipSymbol);
+      const initialSystem = normalizeSymbol((preselectedShip && preselectedShip.systemSymbol)
+        || preselectedSystemSymbol
+        || (waypointForSelection ? waypointForSelection.systemSymbol : "")
+        || (systems.length === 1 ? systems[0] : ""));
+
+      populateSystemOptions(initialSystem);
+
+      if (preselectedShip) {
+        populateShipOptions(initialSystem, preselectedShipSymbol);
+        if (!preferredWaypointSymbol && preselectedShip.waypointSymbol) {
+          preferredWaypointSymbol = String(preselectedShip.waypointSymbol).trim().toUpperCase();
+        }
+        setWaypointOptions(preselectedShip.systemSymbol, preferredWaypointSymbol);
+        return;
+      }
+
+      if (initialSystem) {
+        const matchedShip = populateShipOptions(initialSystem, preferredShipSymbol);
+        const shipInSystem = matchedShip
+          ? getSelectedShip()
+          : ships.find((ship) => normalizeSymbol(ship.systemSymbol) === initialSystem);
+        if (shipInSystem) {
+          preferredShipSymbol = normalizeSymbol(shipInSystem.symbol);
+          setWaypointOptions(initialSystem, preferredWaypointSymbol);
+          return;
+        }
+
+        preselectNote.textContent = `No owned ships are currently in system ${initialSystem}. Select another ship to navigate.`;
+        preselectNote.classList.add("visible");
+      }
+
       // Keep waypoint disabled on first load until ship is selected.
+      populateSystemOptions("");
+      populateShipOptions("", "");
       setWaypointOptions("");
+
     })();

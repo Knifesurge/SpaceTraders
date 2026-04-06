@@ -1,20 +1,275 @@
 extends layout
 
 block content
-  h1 Contract Detail
-  p ID: #{data.id}
-  p Accepted: #{data.accepted}
-  p Fulfilled: #{data.fulfilled}
-  p Deadline: #{data.terms.deadline}
-  h2 Deliverables
-  if data.terms && data.terms.deliver
-    each item in data.terms.deliver
-      .ship-card
-        p Trade Symbol: #{item.tradeSymbol}
-        p Destination: #{item.destinationSymbol}
-        p Required: #{item.unitsRequired}
-        p Fulfilled: #{item.unitsFulfilled}
-  else
-    p No deliverables on this contract.
-  h2 Raw Response
-  pre= JSON.stringify(data, null, 2)
+  style.
+    .detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .detail-title {
+      margin: 0;
+      font-size: 1.75rem;
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+    .detail-sub {
+      margin: 5px 0 0;
+      color: #475569;
+      font-size: 0.94rem;
+    }
+    .detail-links {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .detail-links a,
+    .detail-links button {
+      text-decoration: none;
+      border: 0;
+      background: #475569;
+      color: #fff;
+      border-radius: 7px;
+      padding: 8px 11px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .detail-links button.primary {
+      background: #0f766e;
+    }
+    .detail-links button:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .status-chip {
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #fff;
+      background: #475569;
+      display: inline-block;
+    }
+    .status-chip.good {
+      background: #0f766e;
+    }
+    .status-chip.done {
+      background: #2563eb;
+    }
+    .section-title {
+      margin: 0 0 8px;
+      font-size: 1.02rem;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px 12px;
+    }
+    .meta-grid p {
+      margin: 0;
+      font-size: 0.92rem;
+    }
+    .deliver-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+      align-items: start;
+    }
+    .deliver-card {
+      border: 1px solid #dbe3ec;
+      border-radius: 8px;
+      padding: 10px;
+      background: #fff;
+      border-left: 4px solid #94a3b8;
+    }
+    .deliver-card.complete {
+      border-left-color: #0f766e;
+    }
+    .deliver-card h3 {
+      margin: 0 0 7px;
+      font-size: 0.98rem;
+    }
+    .deliver-meta {
+      display: grid;
+      gap: 4px;
+    }
+    .deliver-meta p {
+      margin: 0;
+      font-size: 0.88rem;
+      color: #334155;
+    }
+    .progress-track {
+      margin-top: 8px;
+      width: 100%;
+      height: 9px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #0f766e, #0ea5e9);
+    }
+    .progress-label {
+      margin-top: 5px;
+      font-size: 0.82rem;
+      color: #475569;
+      font-weight: 700;
+    }
+    .eta-note {
+      margin-top: 4px;
+      color: #334155;
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+    .eta-note.expired {
+      color: #b91c1c;
+    }
+    .deliver-meta a {
+      color: #0f766e;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .deliver-meta a:hover {
+      text-decoration: underline;
+    }
+
+  - const contract = data || {}
+  - const terms = contract.terms || {}
+  - const payment = terms.payment || {}
+  - const deliverables = terms.deliver || []
+  - const totalRequired = deliverables.reduce((sum, item) => sum + Number(item.unitsRequired || 0), 0)
+  - const totalDelivered = deliverables.reduce((sum, item) => sum + Number(item.unitsFulfilled || 0), 0)
+
+  .detail-header
+    div
+      h1.detail-title Contract Detail
+      p.detail-sub Review payment terms and fulfillment progress.
+      .chip-row
+        span(class=`status-chip ${contract.accepted ? "good" : ""}`)= contract.accepted ? "Accepted" : "Unaccepted"
+        span(class=`status-chip ${contract.fulfilled ? "done" : ""}`)= contract.fulfilled ? "Fulfilled" : "In Progress"
+    .detail-links
+      form(action=`/contracts/${contract.id}/accept/view` method="post")
+        button.primary(type="submit" disabled=contract.accepted || contract.fulfilled)= contract.accepted ? "Accepted" : "Accept Contract"
+      a(href="/contracts/view") Back to Contracts
+      a(href="/") Home
+
+  .ship-card
+    h2.section-title Contract Summary
+    .meta-grid
+      p
+        strong ID:
+        |  #{contract.id || "Unknown"}
+      p
+        strong Deadline:
+        if terms.deadline
+          | 
+          span.js-contract-deadline(data-deadline=terms.deadline)= terms.deadline
+        else
+          |  Unknown
+      p
+        strong Deliverable Entries:
+        |  #{deliverables.length}
+      p
+        strong Units Progress:
+        |  #{totalDelivered}/#{totalRequired || 0}
+      p.eta-note.js-deadline-remaining(data-deadline=terms.deadline || "")
+        | Time Remaining: --d --h --m --s
+
+  .ship-card
+    h2.section-title Payment
+    .meta-grid
+      p
+        strong On Accepted:
+        |  #{Number(payment.onAccepted || 0).toLocaleString()}
+      p
+        strong On Fulfilled:
+        |  #{Number(payment.onFulfilled || 0).toLocaleString()}
+
+  .ship-card
+    h2.section-title Deliverables
+    if deliverables.length
+      .deliver-grid
+        each item in deliverables
+          - const required = Number(item.unitsRequired || 0)
+          - const fulfilled = Number(item.unitsFulfilled || 0)
+          - const pct = required > 0 ? Math.min(100, Math.round((fulfilled / required) * 100)) : 0
+          - const destinationSymbol = String(item.destinationSymbol || "")
+          - const destinationSystem = destinationSymbol.split("-").slice(0, 2).join("-")
+          .deliver-card(class=fulfilled >= required && required > 0 ? "complete" : "")
+            h3= item.tradeSymbol
+            .deliver-meta
+              p
+                strong Destination:
+                if destinationSystem && destinationSymbol
+                  | 
+                  a(href=`/systems/${destinationSystem}/waypoints/${destinationSymbol}/view`)= destinationSymbol
+                else
+                  |  #{item.destinationSymbol}
+              p
+                strong Required:
+                |  #{required}
+              p
+                strong Fulfilled:
+                |  #{fulfilled}
+            .progress-track
+              .progress-fill(style=`width:${pct}%`)
+            p.progress-label #{pct}% complete
+    else
+      p No deliverables on this contract.
+
+  script.
+    (() => {
+      const deadlineTextNode = document.querySelector(".js-contract-deadline[data-deadline]");
+      const remainingNode = document.querySelector(".js-deadline-remaining[data-deadline]");
+      if (!remainingNode) return;
+
+      const deadlineRaw = remainingNode.getAttribute("data-deadline") || "";
+      const deadlineMs = Date.parse(deadlineRaw);
+
+      if (deadlineTextNode && !Number.isNaN(deadlineMs)) {
+        deadlineTextNode.textContent = new Date(deadlineMs).toLocaleString();
+      }
+
+      const formatRemaining = (ms) => {
+        const safeMs = Math.max(ms, 0);
+        const totalSeconds = Math.floor(safeMs / 1000);
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+      };
+
+      const tick = () => {
+        if (Number.isNaN(deadlineMs)) {
+          remainingNode.textContent = "Time Remaining: unknown";
+          remainingNode.classList.add("expired");
+          return;
+        }
+
+        const remaining = deadlineMs - Date.now();
+        if (remaining <= 0) {
+          remainingNode.textContent = "Time Remaining: expired";
+          remainingNode.classList.add("expired");
+          return;
+        }
+
+        remainingNode.textContent = `Time Remaining: ${formatRemaining(remaining)}`;
+        remainingNode.classList.remove("expired");
+      };
+
+      tick();
+      setInterval(tick, 1000);
+    })();

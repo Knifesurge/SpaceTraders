@@ -1,0 +1,258 @@
+extends layout
+
+block content
+  style.
+    .waypoint-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .waypoint-title {
+      margin: 0;
+      font-size: 1.8rem;
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+    .waypoint-sub {
+      margin: 5px 0 0;
+      color: #475569;
+      font-size: 0.94rem;
+    }
+    .waypoint-links {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .waypoint-links a {
+      text-decoration: none;
+      background: #475569;
+      color: #fff;
+      border-radius: 7px;
+      padding: 8px 11px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .badge-chip {
+      border-radius: 999px;
+      background: #111827;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      display: inline-block;
+    }
+    .badge-chip.type {
+      background: #0f766e;
+    }
+    .badge-chip.warn {
+      background: #b45309;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px 12px;
+    }
+    .meta-grid p {
+      margin: 0;
+      font-size: 0.92rem;
+    }
+    .section-title {
+      margin: 0 0 8px;
+      font-size: 1.02rem;
+    }
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+    .trait-chip {
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #0f172a;
+      padding: 4px 9px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+    .orbitals-list {
+      margin: 0;
+      padding-left: 16px;
+      display: grid;
+      gap: 4px;
+    }
+    .orbitals-list li {
+      font-size: 0.9rem;
+      color: #334155;
+    }
+    .orbitals-list a {
+      color: #0f766e;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .orbitals-list a:hover {
+      text-decoration: underline;
+    }
+    .presence-list {
+      margin: 0;
+      padding-left: 16px;
+      display: grid;
+      gap: 5px;
+    }
+    .presence-list li {
+      color: #334155;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    .presence-list a {
+      color: #0f766e;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .presence-list a:hover {
+      text-decoration: underline;
+    }
+
+  - const waypoint = data || {}
+  - const traits = waypoint.traits || []
+  - const modifiers = waypoint.modifiers || []
+  - const orbitals = waypoint.orbitals || []
+  - const hasMarketplace = traits.some((trait) => trait.symbol === "MARKETPLACE")
+  - const hasShipyard = traits.some((trait) => trait.symbol === "SHIPYARD")
+  - const hasFuelStation = traits.some((trait) => trait.symbol === "FUEL_STATION")
+  - const isJumpGate = waypoint.type === "JUMP_GATE"
+  - const presence = shipPresence || {}
+  - const dockedShips = presence.dockedShips || []
+  - const orbitingShips = presence.orbitingShips || []
+  - const transitShips = presence.transitShips || []
+  - const otherShips = presence.otherShips || []
+
+  .waypoint-header
+    div
+      h1.waypoint-title Waypoint #{waypoint.symbol || "Unknown"}
+      p.waypoint-sub System #{waypoint.systemSymbol || systemSymbol || "Unknown"}
+      .badge-row
+        span.badge-chip.type= waypoint.type || "UNKNOWN"
+        if waypoint.isUnderConstruction
+          span.badge-chip.warn Under Construction
+        if hasMarketplace
+          span.badge-chip Marketplace
+        if hasShipyard
+          span.badge-chip Shipyard
+        if hasFuelStation
+          span.badge-chip Fuel Station
+        if isJumpGate
+          span.badge-chip Jump Gate
+    .waypoint-links
+      a(href="/systems/current/view") Back to Systems
+      if waypoint.systemSymbol && waypoint.symbol
+        a(href=`/fleet/my/ships/navigate?systemSymbol=${waypoint.systemSymbol}&waypointSymbol=${waypoint.symbol}`) Navigate
+      if waypoint.systemSymbol && waypoint.symbol
+        a(href=`/systems/${waypoint.systemSymbol}/waypoints/${waypoint.symbol}`) JSON
+      if hasMarketplace
+        a(href=`/systems/${waypoint.systemSymbol}/waypoints/${waypoint.symbol}/market/view`) Market
+      if hasShipyard
+        a(href=`/systems/${waypoint.systemSymbol}/waypoints/${waypoint.symbol}/shipyard/view`) Shipyard
+      if isJumpGate
+        a(href=`/systems/${waypoint.systemSymbol}/waypoints/${waypoint.symbol}/jump-gate/view`) Jump Gate
+      if waypoint.isUnderConstruction
+        a(href=`/systems/${waypoint.systemSymbol}/waypoints/${waypoint.symbol}/construction/view`) Construction
+
+  .ship-card
+    h2.section-title Overview
+    .meta-grid
+      p
+        strong Symbol:
+        |  #{waypoint.symbol || "Unknown"}
+      p
+        strong Type:
+        |  #{waypoint.type || "Unknown"}
+      p
+        strong Coordinates:
+        |  (#{waypoint.x}, #{waypoint.y})
+      p
+        strong Orbits:
+        if waypoint.orbits
+          |  #{waypoint.orbits}
+        else if orbitals.length
+          |  None (primary body)
+        else
+          |  None
+      p
+        strong Faction:
+        |  #{waypoint.faction && waypoint.faction.symbol ? waypoint.faction.symbol : "Unclaimed"}
+      p
+        strong Under Construction:
+        |  #{waypoint.isUnderConstruction ? "Yes" : "No"}
+
+  .ship-card
+    h2.section-title My Ships At This Waypoint
+    if presence.total
+      ul.presence-list
+        each shipSymbol in dockedShips
+          li
+            a(href=`/fleet/my/ships/${shipSymbol}`)= shipSymbol
+            |  is docked here.
+        each shipSymbol in orbitingShips
+          li
+            a(href=`/fleet/my/ships/${shipSymbol}`)= shipSymbol
+            |  is in orbit here.
+        each shipSymbol in transitShips
+          li
+            a(href=`/fleet/my/ships/${shipSymbol}`)= shipSymbol
+            |  is in transit to/from this waypoint.
+        each ship in otherShips
+          li
+            a(href=`/fleet/my/ships/${ship.symbol}`)= ship.symbol
+            |  has status #{ship.status} here.
+    else
+      p None of your ships are currently at this waypoint.
+
+  .ship-card
+    h2.section-title Traits
+    if traits.length
+      .chip-list
+        each trait in traits
+          span.trait-chip(title=trait.description || trait.symbol)= trait.name || trait.symbol
+    else
+      p No traits listed.
+
+  .ship-card
+    h2.section-title Modifiers
+    if modifiers.length
+      .chip-list
+        each modifier in modifiers
+          span.trait-chip(title=modifier.description || modifier.symbol)= modifier.name || modifier.symbol
+    else
+      p No modifiers listed.
+
+  .ship-card
+    h2.section-title Orbitals
+    if orbitals.length
+      ul.orbitals-list
+        each orbital in orbitals
+          li
+            if waypoint.systemSymbol && orbital.symbol
+              a(href=`/systems/${waypoint.systemSymbol}/waypoints/${orbital.symbol}/view`)= orbital.symbol
+            else
+              | #{orbital.symbol}
+    else
+      p No orbitals listed.
+
+  if waypoint.chart
+    .ship-card
+      h2.section-title Chart Data
+      .meta-grid
+        p
+          strong Submitted By:
+          |  #{waypoint.chart.submittedBy || "Unknown"}
+        p
+          strong Submitted On:
+          |  #{waypoint.chart.submittedOn || "Unknown"}

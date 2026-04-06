@@ -4,7 +4,9 @@ import cors from "cors";
 import { FleetApi, SystemsApi, WaypointTraitSymbol } from "spacetraders-sdk";
 import config from "../data/config.js";
 import { asyncHandler, sendSuccess } from "./http.js";
-import { getAllMyShipsCached } from "./ship-cache.js";
+import { cacheMarketData, getCachedMarketData, mergeMarketWithCache } from "./market-cache.js";
+import { getAllMyShipsCached, invalidateMyShipsCache } from "./ship-cache.js";
+import { hasVisitedWaypoint } from "./visited-waypoint-cache.js";
 
 const systemsApi = new SystemsApi(config);
 const fleetApi = new FleetApi(config);
@@ -36,6 +38,33 @@ const getAllSystemWaypoints = async (systemSymbol) => {
 };
 
 const normalizeSymbol = (value) => (typeof value === "string" ? value.trim().toUpperCase() : "");
+
+const fetchAndCacheMarketData = async (systemSymbol, waypointSymbol) => {
+  const response = await systemsApi.getMarket(systemSymbol, waypointSymbol);
+  const marketData = response.data?.data || {};
+
+  const cacheResult = cacheMarketData(marketData, {
+    systemSymbol,
+    waypointSymbol,
+  });
+
+  return {
+    response,
+    marketData,
+    cacheResult,
+  };
+};
+
+const queueMarketCacheToast = (req, cacheResult, waypointSymbol) => {
+  if (!req?.session || !cacheResult || cacheResult.changeType === "unchanged") {
+    return;
+  }
+
+  const actionLabel = cacheResult.changeType === "added" ? "Added" : "Updated";
+  req.session.appToast = {
+    message: `${actionLabel} market data for ${waypointSymbol}`,
+  };
+};
 
 // GET all systems
 router.get("/", cors(corsOptions), asyncHandler(async (req, res) => {
@@ -136,6 +165,9 @@ router.get("/current/view", cors(corsOptions), asyncHandler(async (req, res) => 
       .filter((ship) => ship.status === "IN_ORBIT")
       .map((ship) => ship.symbol);
 
+    const isVisited = hasVisitedWaypoint(waypointSymbol);
+    if (isVisited) highlights.unshift("Visited");
+
     return {
       symbol: waypoint.symbol,
       type: waypoint.type,
@@ -148,6 +180,7 @@ router.get("/current/view", cors(corsOptions), asyncHandler(async (req, res) => 
       hasMarketplace,
       hasShipyard,
       isJumpGate,
+      isVisited,
       distanceFromCurrent,
       isCurrent: waypointSymbol === currentWaypointSymbol,
       shipsAtWaypoint,
@@ -233,6 +266,17 @@ router.get("/:systemId", cors(corsOptions), asyncHandler(async (req, res) => {
   const response = await systemsApi.getSystem(req.params.systemId);
   sendSuccess(req, res, { data: response.data });
 }));
+ 
+router.get("/:systemId/view", cors(corsOptions), asyncHandler(async (req, res) => {
+  const response = await systemsApi.getSystem(req.params.systemId);
+  sendSuccess(req, res, {
+    view: "systemDetail",
+    locals: {
+      title: "System Detail",
+      data: response.data.data,
+    },
+  });
+}));
 
 // GET all waypoints in a specific system
 router.get("/:systemId/waypoints", cors(corsOptions), asyncHandler(async (req, res) => {
@@ -270,6 +314,58 @@ router.get(
   })
 );
 
+router.get(
+  "/:systemId/waypoints/:waypointId/view",
+  cors(corsOptions),
+  asyncHandler(async (req, res) => {
+    const waypointResponse = await systemsApi.getWaypoint(
+      req.params.systemId,
+      req.params.waypointId
+    );
+
+    const waypointSymbolNormalized = normalizeSymbol(req.params.waypointId);
+    let shipsHere = [];
+
+    try {
+      const myShips = await getAllMyShipsCached(fleetApi);
+      shipsHere = myShips
+        .filter((ship) => normalizeSymbol(ship?.nav?.waypointSymbol) === waypointSymbolNormalized)
+        .map((ship) => ({
+          symbol: ship.symbol,
+          status: ship?.nav?.status || "UNKNOWN",
+        }));
+    } catch {
+      shipsHere = [];
+    }
+
+    const dockedShips = shipsHere
+      .filter((ship) => ship.status === "DOCKED")
+      .map((ship) => ship.symbol);
+    const orbitingShips = shipsHere
+      .filter((ship) => ship.status === "IN_ORBIT")
+      .map((ship) => ship.symbol);
+    const transitShips = shipsHere
+      .filter((ship) => ship.status === "IN_TRANSIT")
+      .map((ship) => ship.symbol);
+
+    sendSuccess(req, res, {
+      view: "systemWaypointDetail",
+      locals: {
+        title: "Waypoint Detail",
+        data: waypointResponse.data.data,
+        systemSymbol: req.params.systemId,
+        shipPresence: {
+          total: shipsHere.length,
+          dockedShips,
+          orbitingShips,
+          transitShips,
+          otherShips: shipsHere.filter((ship) => !["DOCKED", "IN_ORBIT", "IN_TRANSIT"].includes(ship.status)),
+        },
+      },
+    });
+  })
+);
+
 // GET shipyard information for a specific waypoint in a specific system
 router.get(
   "/:systemId/waypoints/:waypointId/shipyard",
@@ -283,15 +379,36 @@ router.get(
   })
 );
 
+router.get(
+  "/:systemId/waypoints/:waypointId/shipyard/view",
+  cors(corsOptions),
+  asyncHandler(async (req, res) => {
+    const response = await systemsApi.getShipyard(
+      req.params.systemId,
+      req.params.waypointId
+    );
+    sendSuccess(req, res, {
+      view: "systemShipyard",
+      locals: {
+        title: "Shipyard",
+        systemSymbol: req.params.systemId,
+        waypointSymbol: req.params.waypointId,
+        data: response.data.data,
+      },
+    });
+  })
+);
+
 // GET market information for a specific waypoint in a specific system
 router.get(
   "/:systemId/waypoints/:waypointId/market",
   cors(corsOptions),
   asyncHandler(async (req, res) => {
-    const response = await systemsApi.getMarket(
+    const { response, cacheResult } = await fetchAndCacheMarketData(
       req.params.systemId,
-      req.params.waypointId
+      req.params.waypointId,
     );
+    queueMarketCacheToast(req, cacheResult, req.params.waypointId);
     sendSuccess(req, res, { data: response.data });
   })
 );
@@ -300,19 +417,129 @@ router.get(
   "/:systemId/waypoints/:waypointId/market/view",
   cors(corsOptions),
   asyncHandler(async (req, res) => {
-    const response = await systemsApi.getMarket(
-      req.params.systemId,
-      req.params.waypointId
+    const systemSymbol = req.params.systemId;
+    const waypointSymbolInput = req.params.waypointId;
+    const cachedMarketData = getCachedMarketData(waypointSymbolInput);
+    let liveMarketData = null;
+    let hasLiveMarketData = false;
+
+    try {
+      const { marketData, cacheResult } = await fetchAndCacheMarketData(
+        systemSymbol,
+        waypointSymbolInput,
+      );
+      liveMarketData = marketData;
+      hasLiveMarketData = true;
+      queueMarketCacheToast(req, cacheResult, waypointSymbolInput);
+    } catch {
+      liveMarketData = null;
+    }
+
+    const marketData = mergeMarketWithCache(liveMarketData, {
+      systemSymbol,
+      waypointSymbol: waypointSymbolInput,
+    });
+    const effectiveCachedMarket = getCachedMarketData(waypointSymbolInput);
+    const waypointSymbol = normalizeSymbol(waypointSymbolInput);
+    const goodsBySymbol = new Map(
+      (marketData.tradeGoods || []).map((good) => [normalizeSymbol(good.symbol), good])
     );
+
+    const myShips = await getAllMyShipsCached(fleetApi, { forceRefresh: true });
+    const dockedShipsAtWaypoint = myShips.filter((ship) => (
+      normalizeSymbol(ship?.nav?.waypointSymbol) === waypointSymbol
+      && normalizeSymbol(ship?.nav?.status) === "DOCKED"
+    ));
+
+    const sellableCargoByShip = dockedShipsAtWaypoint
+      .map((ship) => {
+        const inventory = ship?.cargo?.inventory || [];
+        const sellableCargo = inventory
+          .filter((item) => Number(item?.units || 0) > 0)
+          .filter((item) => goodsBySymbol.has(normalizeSymbol(item?.symbol)))
+          .map((item) => {
+            const tradeSymbol = normalizeSymbol(item.symbol);
+            const marketGood = goodsBySymbol.get(tradeSymbol) || {};
+            return {
+              symbol: tradeSymbol,
+              name: item?.name || tradeSymbol,
+              units: Number(item?.units || 0),
+              description: item?.description || "",
+              sellPrice: Number(marketGood.sellPrice || 0),
+              marketSupply: String(marketGood.supply || "UNKNOWN"),
+            };
+          })
+          .sort((a, b) => a.symbol.localeCompare(b.symbol));
+
+        return {
+          shipSymbol: ship.symbol,
+          cargoUnits: Number(ship?.cargo?.units || 0),
+          cargoCapacity: Number(ship?.cargo?.capacity || 0),
+          sellableCargo,
+        };
+      })
+      .filter((entry) => entry.sellableCargo.length > 0)
+      .sort((a, b) => a.shipSymbol.localeCompare(b.shipSymbol));
+
+    const sellResult = req.session.marketSellResult || null;
+    delete req.session.marketSellResult;
+
     sendSuccess(req, res, {
       view: "systemMarket",
       locals: {
         title: "Market",
-        systemSymbol: req.params.systemId,
-        waypointSymbol: req.params.waypointId,
-        data: response.data.data,
+        systemSymbol,
+        waypointSymbol: waypointSymbolInput,
+        data: marketData,
+        sellableCargoByShip,
+        sellResult,
+        hasLiveMarketData,
+        hasCachedMarketData: Boolean(cachedMarketData),
+        marketLastUpdatedAt: effectiveCachedMarket ? effectiveCachedMarket.cachedAt : null,
       },
     });
+  })
+);
+
+router.post(
+  "/:systemId/waypoints/:waypointId/market/sell",
+  cors(corsOptions),
+  asyncHandler(async (req, res) => {
+    const shipSymbol = String(req.body.shipSymbol || "").trim();
+    const tradeSymbol = String(req.body.tradeSymbol || "").trim().toUpperCase();
+    const unitsRaw = Number.parseInt(String(req.body.units || "0"), 10);
+    const units = Number.isFinite(unitsRaw) && unitsRaw > 0 ? unitsRaw : 0;
+
+    if (!shipSymbol || !tradeSymbol || !units) {
+      req.session.marketSellResult = {
+        ok: false,
+        message: "Invalid sell request. Please select a ship, trade symbol, and units.",
+      };
+      return res.redirect(`/systems/${req.params.systemId}/waypoints/${req.params.waypointId}/market/view`);
+    }
+
+    const sellResponse = await fleetApi.sellCargo(shipSymbol, {
+      symbol: tradeSymbol,
+      units,
+    });
+
+    invalidateMyShipsCache();
+
+    const sellPayload = sellResponse.data?.data || {};
+    const tx = sellPayload.transaction || {};
+
+    req.session.marketSellResult = {
+      ok: true,
+      shipSymbol,
+      tradeSymbol,
+      units,
+      credits: Number(sellPayload?.agent?.credits || 0),
+      totalPrice: Number(tx.totalPrice || 0),
+      pricePerUnit: Number(tx.pricePerUnit || 0),
+      timestamp: tx.timestamp || null,
+    };
+
+    return res.redirect(`/systems/${req.params.systemId}/waypoints/${req.params.waypointId}/market/view`);
   })
 );
 

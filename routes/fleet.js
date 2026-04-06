@@ -5,7 +5,15 @@ import { DateTime } from "luxon";
 import { FleetApi, SystemsApi, ShipType } from "spacetraders-sdk";
 import config from "../data/config.js";
 import { asyncHandler, sendSuccess } from "./http.js";
-import { getAllMyShipsCached, invalidateMyShipsCache } from "./ship-cache.js";
+import { cacheMarketData } from "./market-cache.js";
+import { hasVisitedWaypoint, markWaypointVisited } from "./visited-waypoint-cache.js";
+import {
+  cachePurchasedShipMetadata,
+  getAllMyShipsCached,
+  getShipDisplayMetadata,
+  inferShipRoleFromType,
+  invalidateMyShipsCache,
+} from "./ship-cache.js";
 
 const router = express.Router();
 const fleetApi = new FleetApi(config);
@@ -16,6 +24,11 @@ const corsOptions = {
 };
 const waypointCacheBySystem = new Map();
 const shipyardPurchaseCacheBySystem = new Map();
+
+export const invalidateFleetCaches = () => {
+  waypointCacheBySystem.clear();
+  shipyardPurchaseCacheBySystem.clear();
+};
 
 router.use("/my/ships", (req, res, next) => {
   if (["POST", "PATCH", "PUT", "DELETE"].includes(req.method)) {
@@ -113,15 +126,84 @@ const getCachedShipyardPurchaseDataForSystem = async (systemSymbol) => {
   return shipyardPurchaseRows;
 };
 
+const navigateShipWithAutoOrbit = async (shipSymbol, waypointSymbol) => {
+  const navResponse = await fleetApi.getShipNav(shipSymbol);
+  const shipStatus = String(navResponse.data?.data?.status || "").toUpperCase();
+
+  if (shipStatus === "DOCKED") {
+    await fleetApi.orbitShip(shipSymbol);
+  }
+
+  return fleetApi.navigateShip(shipSymbol, { waypointSymbol });
+};
+
+const refreshMarketCacheForDockedShip = async (shipSymbol) => {
+  try {
+    const shipResponse = await fleetApi.getMyShip(shipSymbol);
+    const ship = shipResponse.data?.data;
+    const shipStatus = String(ship?.nav?.status || "").toUpperCase();
+
+    if (shipStatus !== "DOCKED") {
+      return;
+    }
+
+    const systemSymbol = String(ship?.nav?.systemSymbol || "").trim();
+    const waypointSymbol = String(ship?.nav?.waypointSymbol || "").trim();
+    if (!systemSymbol || !waypointSymbol) {
+      return null;
+    }
+
+    const marketResponse = await systemsApi.getMarket(systemSymbol, waypointSymbol);
+    return cacheMarketData(marketResponse.data?.data || {}, { systemSymbol, waypointSymbol });
+  } catch {
+    // Best-effort cache update only; do not block dock flow.
+    return null;
+  }
+};
+
+const queueMarketCacheToast = (req, cacheResult, waypointSymbol) => {
+  if (!req?.session || !cacheResult || cacheResult.changeType === "unchanged") {
+    return;
+  }
+
+  const actionLabel = cacheResult.changeType === "added" ? "Added" : "Updated";
+  req.session.appToast = {
+    message: `${actionLabel} market data for ${waypointSymbol}`,
+  };
+};
+
+const isShipExtractCapable = (ship, displayMetadata = {}) => {
+  const shipType = String(displayMetadata.shipType || ship?.frame?.symbol || "").toUpperCase();
+  const mountSymbols = (ship?.mounts || [])
+    .map((mount) => String(mount?.symbol || "").toUpperCase())
+    .filter(Boolean);
+
+  // Prefer concrete capability markers over inferred role labels.
+  if (shipType.includes("MINING_DRONE") || shipType.includes("SIPHON_DRONE")) {
+    return true;
+  }
+
+  return mountSymbols.some((symbol) => (
+    symbol.includes("MOUNT_MINING_LASER") || symbol.includes("MOUNT_GAS_SIPHON")
+  ));
+};
+
 // GET all owned ships
 router.get("/my/ships", cors(corsOptions), asyncHandler(async (req, res) => {
-  const ships = await getAllMyShipsCached(fleetApi);
+  const ships = await getAllMyShipsCached(fleetApi, { forceRefresh: true });
   const properShips = [];
 
   for (const ship of ships) {
+    const displayMetadata = getShipDisplayMetadata(ship);
+    const inferredRole = (
+      displayMetadata.role
+      || inferShipRoleFromType(displayMetadata.shipType)
+      || "UNASSIGNED"
+    );
     const shipData = {
       symbol: ship.symbol,
-      type: ship.frame.symbol,
+      type: displayMetadata.shipType || ship.frame.symbol,
+      role: inferredRole,
       cooldownRemaining: ship.cooldown.remainingSeconds,
       currentFuel: ship.fuel.current,
       maxFuel: ship.fuel.capacity,
@@ -133,7 +215,7 @@ router.get("/my/ships", cors(corsOptions), asyncHandler(async (req, res) => {
       origin: ship.nav.route.origin,
       destination: ship.nav.route.destination,
       arrival: ship.nav.route.arrival,
-      orbitingExtractable: true,
+      orbitingExtractable: isShipExtractCapable(ship, displayMetadata),
     };
 
     const arrival = DateTime.fromISO(ship.nav.route.arrival);
@@ -163,11 +245,28 @@ router.get("/my/ships/:shipId([^/]*-[^/]*)", cors(corsOptions), asyncHandler(asy
     fleetApi.getMyShip(shipId),
     fleetApi.getMyShipCargo(shipId),
   ]);
+  const ship = shipResponse.data.data;
+  markWaypointVisited(ship?.nav?.waypointSymbol);
+  const displayMetadata = getShipDisplayMetadata(ship);
+  const inferredRole = (
+    displayMetadata.role
+    || inferShipRoleFromType(displayMetadata.shipType)
+    || "UNASSIGNED"
+  );
+  const canExtractResources = (
+    String(ship?.nav?.status || "").toUpperCase() !== "DOCKED"
+    && isShipExtractCapable(ship, displayMetadata)
+  );
 
   sendSuccess(req, res, {
     view: "shipDetail",
     locals: {
-      ship: shipResponse.data.data,
+      ship,
+      shipDisplay: {
+        type: displayMetadata.shipType || ship?.frame?.symbol || "UNKNOWN",
+        role: inferredRole,
+      },
+      canExtractResources,
       cargo: cargoResponse.data.data,
       jettisonData: responseData,
     },
@@ -272,11 +371,18 @@ router.post("/my/ships/orbit", cors(corsOptions), asyncHandler(async (req, res) 
 router.post("/my/ships/dock", cors(corsOptions), asyncHandler(async (req, res) => {
   const { shipSymbol } = req.body;
   await fleetApi.dockShip(shipSymbol);
+  const cacheResult = await refreshMarketCacheForDockedShip(shipSymbol);
+  if (cacheResult?.entry?.waypointSymbol) {
+    queueMarketCacheToast(req, cacheResult, cacheResult.entry.waypointSymbol);
+  }
   res.redirect("/fleet/my/ships/");
 }));
 
 // GET the ship navigation form
 router.get("/my/ships/navigate", cors(corsOptions), asyncHandler(async (req, res) => {
+  const preselectedShipSymbol = String(req.query.shipSymbol || "").trim().toUpperCase();
+  const preselectedWaypointSymbol = String(req.query.waypointSymbol || "").trim().toUpperCase();
+  const preselectedSystemSymbol = String(req.query.systemSymbol || "").trim().toUpperCase();
   const myShips = await getAllMyShipsCached(fleetApi);
   const shipData = [];
   for (const ship of myShips) {
@@ -294,7 +400,10 @@ router.get("/my/ships/navigate", cors(corsOptions), asyncHandler(async (req, res
   for (const system of currentSystems) {
     const cachedWaypoints = await getCachedWaypointsForSystem(system);
     for (const waypoint of cachedWaypoints) {
-      waypointData.push(waypoint);
+      waypointData.push({
+        ...waypoint,
+        visited: hasVisitedWaypoint(waypoint.symbol),
+      });
     }
   }
 
@@ -303,6 +412,9 @@ router.get("/my/ships/navigate", cors(corsOptions), asyncHandler(async (req, res
     locals: {
       ships: shipData || [],
       waypoints: waypointData || [],
+      preselectedShipSymbol,
+      preselectedWaypointSymbol,
+      preselectedSystemSymbol,
     },
   });
 }));
@@ -310,11 +422,16 @@ router.get("/my/ships/navigate", cors(corsOptions), asyncHandler(async (req, res
 // Legacy POST to navigate a ship to a waypoint
 router.post("/my/ships/navigate/submit", cors(corsOptions), asyncHandler(async (req, res) => {
   const { shipSymbol, waypointSymbol } = req.body;
-  const response = await fleetApi.navigateShip(shipSymbol, { waypointSymbol });
+  const response = await navigateShipWithAutoOrbit(shipSymbol, waypointSymbol);
+  const navigationData = response.data?.data || response.data || {};
 
   sendSuccess(req, res, {
-    view: "response",
-    locals: { data: response.data },
+    view: "shipNavigationResult",
+    locals: {
+      shipSymbol,
+      requestedWaypointSymbol: waypointSymbol,
+      data: navigationData,
+    },
   });
 }));
 
@@ -324,9 +441,7 @@ router.post(
   cors(corsOptions),
   asyncHandler(async (req, res) => {
     const { waypointSymbol } = req.body;
-    const response = await fleetApi.navigateShip(req.params.shipSymbol, {
-      waypointSymbol,
-    });
+    const response = await navigateShipWithAutoOrbit(req.params.shipSymbol, waypointSymbol);
     sendSuccess(req, res, { data: response.data });
   })
 );
@@ -372,10 +487,12 @@ router.post("/my/ships/purchaseship", cors(corsOptions), asyncHandler(async (req
     waypointSymbol,
   };
   const response = await fleetApi.purchaseShip(purchaseRequest);
+  const purchaseData = response.data?.data || null;
+  cachePurchasedShipMetadata(purchaseData);
 
   sendSuccess(req, res, {
-    view: "response",
-    locals: { data: response.data },
+    view: "shipPurchaseResult",
+    locals: { data: purchaseData || response.data },
   });
 }));
 
@@ -394,6 +511,7 @@ router.post(
       waypointSymbol,
     };
     const response = await fleetApi.purchaseShip(purchaseRequest);
+    cachePurchasedShipMetadata(response.data?.data || null);
     sendSuccess(req, res, { data: response.data });
   })
 );
@@ -403,7 +521,12 @@ router.post(
   "/my/ships/:shipSymbol/dock",
   cors(corsOptions),
   asyncHandler(async (req, res) => {
-    const response = await fleetApi.dockShip(req.params.shipSymbol);
+    const shipSymbol = req.params.shipSymbol;
+    const response = await fleetApi.dockShip(shipSymbol);
+    const cacheResult = await refreshMarketCacheForDockedShip(shipSymbol);
+    if (cacheResult?.entry?.waypointSymbol) {
+      queueMarketCacheToast(req, cacheResult, cacheResult.entry.waypointSymbol);
+    }
     sendSuccess(req, res, { data: response.data });
   })
 );

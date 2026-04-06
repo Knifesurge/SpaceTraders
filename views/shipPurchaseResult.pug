@@ -1,0 +1,142 @@
+extends layout
+
+block content
+  style.
+    .purchase-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .purchase-title {
+      margin: 0;
+      font-size: 1.8rem;
+      line-height: 1.1;
+    }
+    .purchase-sub {
+      margin: 5px 0 0;
+      color: #475569;
+      font-size: 0.94rem;
+    }
+    .purchase-links {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .purchase-links a {
+      text-decoration: none;
+      background: #475569;
+      color: #fff;
+      border-radius: 7px;
+      padding: 8px 11px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .purchase-links a.primary {
+      background: #0f766e;
+    }
+    .success-banner {
+      border-left: 4px solid #16a34a;
+      background: #f0fdf4;
+      color: #166534;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px 12px;
+    }
+    .meta-grid p {
+      margin: 0;
+      font-size: 0.92rem;
++      overflow-wrap: anywhere;
+    }
+    .section-title {
+      margin: 0 0 8px;
+      font-size: 1.02rem;
+    }
+
+  - const purchase = data || {}
+  - const agent = purchase.agent || {}
+  - const ship = purchase.ship || {}
+  - const tx = purchase.transaction || {}
+  - const purchasedShipSymbol = ship.symbol || tx.shipSymbol || null
+  - const purchasedWaypoint = tx.waypointSymbol || ship.nav?.waypointSymbol || null
+  - const purchasedSystem = purchasedWaypoint ? purchasedWaypoint.split("-").slice(0, 2).join("-") : null
+
+  .purchase-header
+    div
+      h1.purchase-title Ship Purchase Complete
+      p.purchase-sub Your transaction has been recorded and the new ship is now available.
+    .purchase-links
+      a.primary(href="/fleet/my/ships") Go to Fleet
+      if purchasedShipSymbol
+        a(href=`/fleet/my/ships/${purchasedShipSymbol}`) Open Ship Details
+      if purchasedSystem && purchasedWaypoint
+        a(href=`/systems/${purchasedSystem}/waypoints/${purchasedWaypoint}/view`) Open Waypoint
+
+  .success-banner
+    | Purchased #{ship.type || tx.shipType || "ship"}
+    if purchasedShipSymbol
+      |  as #{purchasedShipSymbol}
+    | .
+
+  .ship-card
+    h2.section-title Transaction
+    .meta-grid
+      p
+        strong Shipyard Waypoint:
+        |  #{tx.waypointSymbol || "Unknown"}
+      p
+        strong Ship Symbol:
+        |  #{tx.shipSymbol || ship.symbol || "Unknown"}
+      p
+        strong Ship Type:
+        |  #{tx.shipType || ship.type || "Unknown"}
+      p
+        strong Price:
+        |  #{Number(tx.price || 0).toLocaleString()} C
+      p
+        strong Timestamp:
+        |  #{tx.timestamp || "Unknown"}
+
+  .ship-card
+    h2.section-title Agent Credits
+    .meta-grid
+      p
+        strong Agent:
+        |  #{agent.symbol || "Unknown"}
+      p
+        strong Remaining Credits:
+        |  #{Number(agent.credits || 0).toLocaleString()} C
+      p
+        strong Fleet Size:
+        |  #{agent.shipCount || "Unknown"}
+
+  .ship-card
+    h2.section-title New Ship Snapshot
+    .meta-grid
+      p
+        strong Symbol:
+        |  #{ship.symbol || "Unknown"}
+      p
+        strong Type:
+        |  #{ship.type || "Unknown"}
+      p
+        strong System:
+        |  #{ship.nav?.systemSymbol || "Unknown"}
+      p
+        strong Waypoint:
+        |  #{ship.nav?.waypointSymbol || "Unknown"}
+      p
+        strong Fuel:
+        |  #{ship.fuel?.current || 0}/#{ship.fuel?.capacity || 0}
+      p
+        strong Cargo:
+        |  #{ship.cargo?.units || 0}/#{ship.cargo?.capacity || 0}
