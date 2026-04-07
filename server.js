@@ -4,6 +4,7 @@ import cors from "cors";
 import session from "express-session";
 import { AgentsApi, FleetApi } from "spacetraders-sdk";
 import AgentRouter from "./routes/agent.js";
+import AccountRouter from "./routes/account.js";
 import ContractRouter from "./routes/contract.js";
 import SystemsRouter from "./routes/system.js";
 import FleetRouter from "./routes/fleet.js";
@@ -372,6 +373,7 @@ app.use(async (req, res, next) => {
 });
 
 app.use("/agent", AgentRouter);
+app.use("/account", AccountRouter);
 app.use("/contracts", ContractRouter);
 app.use("/systems", SystemsRouter);
 app.use("/fleet", FleetRouter);

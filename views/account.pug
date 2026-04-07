@@ -1,0 +1,299 @@
+extends layout
+
+block content
+  style.
+    .account-grid {
+      display: grid;
+      gap: 14px;
+    }
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .kpi {
+      border: 1px solid #dbe3ec;
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 10px;
+    }
+    .kpi-label {
+      margin: 0;
+      color: #64748b;
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 700;
+    }
+    .kpi-value {
+      margin: 4px 0 0;
+      font-weight: 800;
+      font-size: 1.08rem;
+      color: #0f172a;
+    }
+    .hint {
+      margin: 8px 0 0;
+      color: #475569;
+      line-height: 1.45;
+      font-size: 0.92rem;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid #dbe3ec;
+      border-radius: 10px;
+      background: #fff;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 680px;
+    }
+    th,
+    td {
+      padding: 9px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+    th {
+      background: #f1f5f9;
+      color: #0f172a;
+      font-size: 0.74rem;
+    }
+    .sort-button {
+      width: 100%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      margin: 0;
+      color: inherit;
+      font: inherit;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+    }
+    .sort-button:hover {
+      color: #0f766e;
+    }
+    .sort-button.is-active {
+      color: #0f766e;
+    }
+    .sort-indicator {
+      min-width: 28px;
+      text-align: right;
+      color: #64748b;
+    }
+    .sort-button.is-active .sort-indicator {
+      color: #0f766e;
+    }
+    tr:last-child td {
+      border-bottom: 0;
+    }
+    .muted {
+      color: #64748b;
+    }
+
+  .account-grid
+    .ship-card
+      h1 Account
+      if myAgent
+        p.hint Authenticated agent snapshot from the SDK.
+        .kpi-row
+          .kpi
+            p.kpi-label Agent
+            p.kpi-value= myAgent.symbol || "Unknown"
+          .kpi
+            p.kpi-label Faction
+            p.kpi-value= myAgent.startingFaction || "Unknown"
+          .kpi
+            p.kpi-label Ships
+            p.kpi-value= Number(myAgent.shipCount || 0).toLocaleString()
+          .kpi
+            p.kpi-label Credits
+            p.kpi-value= Number(myAgent.credits || 0).toLocaleString()
+          .kpi
+            p.kpi-label HQ
+            p.kpi-value= myAgent.headquarters || "Unknown"
+      else
+        p.hint No authenticated agent data was returned. Check AGENT_TOKEN.
+
+    .ship-card
+      h2 Active Agents Snapshot
+      p.hint Showing currently active public agents (shipCount greater than 0) from /agents.
+      p.hint
+        | Fetched #{Number(snapshot.totalFetched || 0).toLocaleString()} agents across #{snapshot.pagesFetched} page(s)
+        if snapshot.totalAvailable !== null
+          |  of approximately #{Number(snapshot.totalAvailable || 0).toLocaleString()} total.
+        else
+          | .
+      if activeAgents && activeAgents.length
+        .table-wrap
+          table#activeAgentsTable
+            thead
+              tr
+                th(scope="col")
+                  button.sort-button(type="button" data-sort-key="symbol" aria-pressed="false")
+                    span Symbol
+                    span.sort-indicator(data-indicator-for="symbol")
+                th(scope="col")
+                  button.sort-button(type="button" data-sort-key="faction" aria-pressed="false")
+                    span Faction
+                    span.sort-indicator(data-indicator-for="faction")
+                th(scope="col")
+                  button.sort-button(type="button" data-sort-key="ships" aria-pressed="false")
+                    span Ships
+                    span.sort-indicator(data-indicator-for="ships")
+                th(scope="col")
+                  button.sort-button(type="button" data-sort-key="credits" aria-pressed="false")
+                    span Credits
+                    span.sort-indicator(data-indicator-for="credits")
+                th(scope="col")
+                  button.sort-button(type="button" data-sort-key="hq" aria-pressed="false")
+                    span HQ
+                    span.sort-indicator(data-indicator-for="hq")
+            tbody
+              each agent, index in activeAgents
+                tr(data-original-index=index)
+                  td(data-sort-value=agent.symbol || "")= agent.symbol || "-"
+                  td(data-sort-value=agent.startingFaction || "")= agent.startingFaction || "-"
+                  td(data-sort-value=Number(agent.shipCount || 0))= Number(agent.shipCount || 0).toLocaleString()
+                  td(data-sort-value=Number(agent.credits || 0))= Number(agent.credits || 0).toLocaleString()
+                  td(data-sort-value=agent.headquarters || "")= agent.headquarters || "-"
+      else
+        p.muted No active public agents were returned for this snapshot.
+
+    .ship-card
+      h2 SDK Coverage
+      ul
+        li getMyAgent: #{sdkCoverage.hasGetMyAgent ? "yes" : "no"}
+        li getAgents: #{sdkCoverage.hasGetAgents ? "yes" : "no"}
+        li getMyAccount: #{sdkCoverage.hasGetMyAccount ? "yes" : "no"}
+      p.hint The live OpenAPI spec currently does not expose /my/account, so the generated SDK does not include AccountsApi.
+
+  if activeAgents && activeAgents.length
+    script.
+      (() => {
+        const table = document.getElementById("activeAgentsTable");
+        if (!table) {
+          return;
+        }
+
+        const tbody = table.querySelector("tbody");
+        const buttons = Array.from(table.querySelectorAll(".sort-button"));
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+        const columnIndexByKey = {
+          symbol: 0,
+          faction: 1,
+          ships: 2,
+          credits: 3,
+          hq: 4,
+        };
+        const numericKeys = new Set(["ships", "credits"]);
+
+        let activeSort = {
+          key: null,
+          direction: null,
+        };
+
+        const getNextDirection = (key) => {
+          const defaultDirection = numericKeys.has(key) ? "desc" : "asc";
+          const alternateDirection = defaultDirection === "asc" ? "desc" : "asc";
+
+          if (activeSort.key !== key) {
+            return defaultDirection;
+          }
+          if (activeSort.direction === defaultDirection) {
+            return alternateDirection;
+          }
+          if (activeSort.direction === alternateDirection) {
+            return null;
+          }
+          return defaultDirection;
+        };
+
+        const getRowValue = (row, key) => {
+          const columnIndex = columnIndexByKey[key];
+          const cell = row.children[columnIndex];
+          const rawValue = cell ? String(cell.dataset.sortValue || "") : "";
+
+          if (numericKeys.has(key)) {
+            return Number(rawValue || 0);
+          }
+
+          return rawValue.toLowerCase();
+        };
+
+        const updateIndicators = () => {
+          for (const button of buttons) {
+            const key = button.dataset.sortKey;
+            const indicator = button.querySelector(".sort-indicator");
+            const isActive = activeSort.key === key && Boolean(activeSort.direction);
+
+            button.classList.toggle("is-active", isActive);
+            button.setAttribute("aria-pressed", isActive ? "true" : "false");
+
+            if (!indicator) {
+              continue;
+            }
+
+            if (!isActive) {
+              indicator.textContent = "";
+              continue;
+            }
+
+            indicator.textContent = activeSort.direction === "asc" ? "▲" : "▼";
+          }
+        };
+
+        const renderRows = () => {
+          const nextRows = rows.slice();
+
+          if (activeSort.key && activeSort.direction) {
+            nextRows.sort((left, right) => {
+              const leftValue = getRowValue(left, activeSort.key);
+              const rightValue = getRowValue(right, activeSort.key);
+
+              if (leftValue < rightValue) {
+                return activeSort.direction === "asc" ? -1 : 1;
+              }
+              if (leftValue > rightValue) {
+                return activeSort.direction === "asc" ? 1 : -1;
+              }
+
+              return Number(left.dataset.originalIndex || 0) - Number(right.dataset.originalIndex || 0);
+            });
+          } else {
+            nextRows.sort((left, right) => (
+              Number(left.dataset.originalIndex || 0) - Number(right.dataset.originalIndex || 0)
+            ));
+          }
+
+          for (const row of nextRows) {
+            tbody.appendChild(row);
+          }
+        };
+
+        for (const button of buttons) {
+          button.addEventListener("click", () => {
+            const key = button.dataset.sortKey;
+            const nextDirection = getNextDirection(key);
+
+            activeSort = {
+              key: nextDirection ? key : null,
+              direction: nextDirection,
+            };
+
+            updateIndicators();
+            renderRows();
+          });
+        }
+
+        updateIndicators();
+      })();

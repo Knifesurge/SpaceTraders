@@ -4,8 +4,10 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "generate": "npx @openapitools/openapi-generator-cli generate -i https://spacetraders.io/SpaceTraders.json -o packages/spacetraders-sdk -g typescript-axios --additional-properties=npmName=\"spacetraders-sdk\" --additional-properties=npmVersion=\"2.3.0\" --additional-properties=supportsES6=true --additional-properties=withSeparateModelsAndApi=true --additional-properties=modelPackage=\"models\" --additional-properties=apiPackage=\"api\"",
+    "postgenerate": "node -e \"const fs=require('fs'),p='packages/spacetraders-sdk/tsconfig.json',c=JSON.parse(fs.readFileSync(p));c.compilerOptions.target='es2017';c.compilerOptions.lib=['es2017','dom'];fs.writeFileSync(p,JSON.stringify(c,null,2)+'\\n');\"",
     "start": "node server.js",
-    "dev": "nodemon --watch server.js --watch routes --watch views --watch data --ext js,pug,json server.js",
+    "dev": "nodemon --watch server.js --watch routes --watch views --watch data --ignore \"data/cache/**\" --ext js,pug,json server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Knifesurge",
@@ -19,6 +21,7 @@
     "express-session": "^1.18.1",
     "luxon": "^3.6.1",
     "pug": "^3.0.3",
+    "space_traders_api": "file:packages/spacetraders-sdk",
     "spacetraders-sdk": "file:packages/spacetraders-sdk"
   },
   "devDependencies": {

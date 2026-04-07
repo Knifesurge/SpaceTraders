@@ -61,6 +61,10 @@ export const markWaypointVisited = (waypointSymbol, options = {}) => {
 
   const agentKey = options.agentKey || getActiveAgentKey();
   const visitedMap = getVisitedMapForAgent(agentKey);
+  if (visitedMap.has(symbol)) {
+    return;
+  }
+
   visitedMap.set(symbol, {
     symbol,
     visitedAt: Date.now(),
